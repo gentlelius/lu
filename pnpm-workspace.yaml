@@ -1,0 +1,4 @@
+packages:
+  - "broker"
+  - "runner"
+  - "app"

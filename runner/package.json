@@ -1,0 +1,41 @@
+{
+  "name": "claude-remote-runner",
+  "version": "1.0.0",
+  "description": "Remote terminal runner for Claude Remote project",
+  "main": "dist/index.js",
+  "bin": {
+    "claude-runner": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "claude",
+    "remote",
+    "terminal",
+    "runner",
+    "pty"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-pty": "^1.0.0",
+    "socket.io-client": "^4.7.4",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "claude-remote",
+  "private": true,
+  "scripts": {
+    "dev:broker": "pnpm --filter broker dev",
+    "dev:runner": "pnpm --filter runner dev",
+    "dev:app": "pnpm --filter app start",
+    "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
