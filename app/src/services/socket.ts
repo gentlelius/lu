@@ -1,30 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 
-// 获取 broker URL
-// Broker 已部署到云端 115.191.40.55
-// 所有平台统一使用云端地址
-const getBrokerUrl = (): string => {
-  // 尝试从 Expo manifest 中获取 host IP
-  const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
-  
-  if (Platform.OS === 'web') {
-    // Web 模式下使用云端 broker
-    return 'http://115.191.40.55:3000';
-  }
-  
-  // 真机或模拟器上，使用 debugger host IP
-  if (debuggerHost) {
-    console.log(`📱 Using broker host from Expo: ${debuggerHost}`);
-    return `http://${debuggerHost}:3000`;
-  }
-  
-  // 所有平台统一使用云端 broker
-  return 'http://115.191.40.55:3000';
-};
-
-const BROKER_URL = getBrokerUrl();
+// Broker 已部署到云端
+const BROKER_URL = 'http://115.191.40.55:3000';
 console.log(`🌐 Broker URL: ${BROKER_URL}`);
 
 class SocketService {
@@ -37,6 +15,8 @@ class SocketService {
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
+        // 强制使用 WebSocket，禁用 xhr polling（React Native 不支持）
+        transports: ['websocket'],
       });
 
       this.socket.on('connect', () => {
