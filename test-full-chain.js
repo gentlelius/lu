@@ -1,6 +1,6 @@
 const io = require("socket.io-client");
 
-const BROKER_URL = "http://localhost:3000";
+const BROKER_URL = "http://115.191.40.55:3000";
 const socket = io(BROKER_URL);
 
 console.log("Connecting...");
@@ -31,7 +31,7 @@ socket.on("terminal_output", (data) => {
 });
 
 socket.on("connect_error", (err) =>
-  console.error("❌ Connection error:", err.message)
+  console.error("❌ Connection error:", err.message),
 );
 
 setTimeout(() => {

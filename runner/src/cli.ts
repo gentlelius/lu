@@ -47,7 +47,7 @@ Usage:
   claude-runner [options]
 
 Options:
-  --url <url>        Broker server URL (default: http://localhost:3000)
+  --url <url>        Broker server URL (default: http://115.191.40.55:3000)
   --id <id>          Runner ID (default: runner-1)
   --secret <secret>  Runner secret for authentication
   --help, -h         Show this help message

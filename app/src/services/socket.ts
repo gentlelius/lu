@@ -3,15 +3,15 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 // 获取 broker URL
-// Web: 使用 localhost
-// Mobile: 使用电脑的 IP 地址
+// Broker 已部署到云端 115.191.40.55
+// 所有平台统一使用云端地址
 const getBrokerUrl = (): string => {
   // 尝试从 Expo manifest 中获取 host IP
   const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
   
   if (Platform.OS === 'web') {
-    // Web 模式下直接使用 localhost
-    return 'http://localhost:3000';
+    // Web 模式下使用云端 broker
+    return 'http://115.191.40.55:3000';
   }
   
   // 真机或模拟器上，使用 debugger host IP
@@ -20,13 +20,8 @@ const getBrokerUrl = (): string => {
     return `http://${debuggerHost}:3000`;
   }
   
-  // 对于 Android emulator，使用特殊 IP
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000';
-  }
-  
-  // iOS simulator 可以使用 localhost
-  return 'http://localhost:3000';
+  // 所有平台统一使用云端 broker
+  return 'http://115.191.40.55:3000';
 };
 
 const BROKER_URL = getBrokerUrl();

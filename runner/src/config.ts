@@ -6,7 +6,7 @@ export interface Config {
 
 export function loadConfig(): Config {
   return {
-    brokerUrl: process.env.BROKER_URL || 'http://localhost:3000',
+    brokerUrl: process.env.BROKER_URL || 'http://115.191.40.55:3000',
     runnerId: process.env.RUNNER_ID || 'runner-1',
     runnerSecret: process.env.RUNNER_SECRET || 'secret-runner-1',
   };
