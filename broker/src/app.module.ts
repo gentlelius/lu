@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { EventsGateway } from './gateway/events.gateway';
 import { RunnerService } from './runner/runner.service';
 import { AuthService } from './auth/auth.service';
+import { RedisModule } from './pairing/redis';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { AuthService } from './auth/auth.service';
       secret: process.env.JWT_SECRET || 'claude-remote-secret-key',
       signOptions: { expiresIn: '7d' },
     }),
+    RedisModule,
   ],
   providers: [EventsGateway, RunnerService, AuthService],
 })
