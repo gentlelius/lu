@@ -5,6 +5,10 @@ import { RunnerService } from './runner/runner.service';
 import { AuthService } from './auth/auth.service';
 import { RedisModule } from './pairing/redis';
 import { PairingSessionService } from './pairing/pairing-session';
+import { PairingGateway } from './pairing/gateway/pairing.gateway';
+import { PairingCodeService } from './pairing/pairing-code/pairing-code.service';
+import { RateLimitService } from './pairing/rate-limit/rate-limit.service';
+import { PairingHistoryService } from './pairing/pairing-history/pairing-history.service';
 
 @Module({
   imports: [
@@ -14,6 +18,15 @@ import { PairingSessionService } from './pairing/pairing-session';
     }),
     RedisModule,
   ],
-  providers: [EventsGateway, RunnerService, AuthService, PairingSessionService],
+  providers: [
+    EventsGateway,
+    PairingGateway,
+    RunnerService,
+    AuthService,
+    PairingSessionService,
+    PairingCodeService,
+    RateLimitService,
+    PairingHistoryService,
+  ],
 })
 export class AppModule {}

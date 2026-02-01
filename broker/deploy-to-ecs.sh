@@ -55,6 +55,11 @@ rsync -avz --progress \
   ./ \
   $ECS_USER@$ECS_HOST:$ECS_PATH/broker/
 
+# 确保 .env.example 被同步
+echo ""
+echo "📄 确保 .env.example 文件存在..."
+scp -P $ECS_PORT .env.example $ECS_USER@$ECS_HOST:$ECS_PATH/broker/.env.example
+
 echo "✅ 代码同步完成"
 
 # 3. 在 ECS 上执行部署
@@ -62,6 +67,13 @@ echo ""
 echo "🔨 在 ECS 上执行部署..."
 ssh -p $ECS_PORT $ECS_USER@$ECS_HOST << 'ENDSSH'
 cd /opt/claude-remote/broker
+
+# 检查 .env.example 文件
+if [ ! -f ".env.example" ]; then
+  echo "❌ 错误: .env.example 文件不存在！"
+  echo "   这不应该发生，请检查同步过程"
+  exit 1
+fi
 
 # 检查 .env 文件
 if [ ! -f ".env" ]; then

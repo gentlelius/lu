@@ -75,7 +75,7 @@ export default function PairingScreen() {
     try {
       // TODO: Replace with actual JWT token from authentication
       const config = {
-        brokerUrl: 'http://localhost:3000', // TODO: Use environment variable
+        brokerUrl: 'http://115.191.40.55:3000', // Cloud broker URL
         jwtToken: 'demo-token',
       };
 

@@ -63,20 +63,6 @@ interface RetryConfig {
 }
 
 /**
- * Pairing response interface
- */
-interface PairingResponse {
-  success: boolean;
-  runnerId?: string;
-  pairedAt?: string;
-  error?: {
-    code: PairingErrorCode;
-    message: string;
-    remainingBanTime?: number;
-  };
-}
-
-/**
  * Pairing status response interface
  */
 interface PairingStatusResponse {
@@ -160,6 +146,11 @@ export class AppClient {
       });
 
       this.setupEventHandlers(resolve, reject);
+      
+      // Debug: Log all events from broker
+      this.socket.onAny((eventName, ...args) => {
+        console.log(`📨 Received event from broker: ${eventName}`, args);
+      });
     });
   }
 
@@ -186,24 +177,17 @@ export class AppClient {
       console.log('✅ Connected to broker');
       this.isConnected = true;
 
+      // Resolve on first connection (pairing system doesn't require separate auth)
+      if (this.connectionAttempts === 1) {
+        console.log('✅ Connection established - ready for pairing');
+        resolve();
+      }
+
       // On reconnection, restore pairing relationship
       if (this.connectionAttempts > 1 && this.pairingState.isPaired) {
         console.log('🔄 Reconnected - restoring pairing relationship...');
         this.restorePairingRelationship();
       }
-    });
-
-    // Authentication successful
-    this.socket.on('app:authenticated', (data: { message: string }) => {
-      console.log('✅ App authenticated successfully');
-      resolve();
-    });
-
-    // Authentication failed
-    this.socket.on('app:auth:error', (data: { error: string; message: string }) => {
-      console.error(`❌ Authentication failed: ${data.message}`);
-      this.pairingState.error = data.message;
-      reject(new Error(data.message));
     });
 
     // Pairing successful
@@ -358,9 +342,19 @@ export class AppClient {
     console.log(`🔗 Sending pairing request with code: ${pairingCode}`);
     
     return new Promise((resolve, reject) => {
+      // Add timeout to prevent hanging forever
+      const timeout = setTimeout(() => {
+        this.socket?.off('app:pair:success', successHandler);
+        this.socket?.off('app:pair:error', errorHandler);
+        console.error('❌ Pairing request timed out after 30 seconds');
+        reject(new Error('Pairing request timed out. Please check your connection and try again.'));
+      }, 30000); // 30 second timeout
+
       // Set up one-time listeners for the response
       const successHandler = (data: { runnerId: string; pairedAt: string }) => {
+        clearTimeout(timeout);
         this.socket?.off('app:pair:error', errorHandler);
+        console.log('✅ Received pairing success response');
         resolve();
       };
 
@@ -369,7 +363,9 @@ export class AppClient {
         code: PairingErrorCode;
         remainingBanTime?: number;
       }) => {
+        clearTimeout(timeout);
         this.socket?.off('app:pair:success', successHandler);
+        console.error('❌ Received pairing error response:', data);
         reject(new Error(this.getUserFriendlyErrorMessage(data.code, data.remainingBanTime)));
       };
 
@@ -377,6 +373,7 @@ export class AppClient {
       this.socket?.once('app:pair:error', errorHandler);
 
       // Send pairing request
+      console.log('📤 Emitting app:pair event to broker');
       this.socket?.emit('app:pair', { pairingCode });
     });
   }
