@@ -1,74 +1,70 @@
-import { io, Socket } from 'socket.io-client';
-import { Platform } from 'react-native';
-
-// Broker 已部署到云端
-const BROKER_URL = 'http://115.191.40.55:3000';
-console.log(`🌐 Broker URL: ${BROKER_URL}`);
+import { Socket } from 'socket.io-client';
 
 /**
  * SocketService
  * 
- * @deprecated This service is used for terminal communication only.
- * For pairing and authentication, use AppClient instead.
+ * Handles terminal communication using an existing socket connection.
+ * This service should use the same socket as AppClient to maintain
+ * the same session ID for pairing verification.
  * 
- * SECURITY NOTE: This service does not handle pairing verification.
- * The broker now requires apps to be paired with runners before
- * allowing terminal connections.
+ * SECURITY NOTE: This service relies on AppClient for pairing verification.
+ * The broker requires apps to be paired with runners before allowing
+ * terminal connections.
  */
 class SocketService {
   private socket: Socket | null = null;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
 
-  connect(token: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.socket = io(BROKER_URL, {
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        // 强制使用 WebSocket，禁用 xhr polling（React Native 不支持）
-        transports: ['websocket'],
-      });
-
-      this.socket.on('connect', () => {
-        console.log('🌐 Socket.io connected to Broker');
-        this.socket?.emit('app_auth', { token });
-      });
-  
-      this.socket.on('app_authenticated', (data) => {
-        console.log('✅ App authenticated successfully:', data);
-        resolve();
-      });
-  
-      this.socket.on('connect_error', (error) => {
-        console.error('❌ Socket.io connection error:', error);
-        reject(error);
-      });
-  
-      this.socket.on('error', (data) => {
-        console.error('⚠️ Socket.io server-side error:', data);
-      });
-
-      // 转发所有事件给监听器
+  /**
+   * Set the socket to use for terminal communication
+   * This should be the same socket used by AppClient
+   */
+  setSocket(socket: Socket): void {
+    // Clean up old socket listeners if any
+    if (this.socket) {
       ['terminal_output', 'session_created', 'session_ended', 'runner_offline'].forEach(
         (event) => {
-          this.socket?.on(event, (data) => {
-            this.emit(event, data);
-          });
+          this.socket?.off(event);
         }
       );
-    });
+    }
+
+    this.socket = socket;
+
+    // Set up event listeners
+    ['terminal_output', 'session_created', 'session_ended', 'runner_offline'].forEach(
+      (event) => {
+        this.socket?.on(event, (data) => {
+          this.emit(event, data);
+        });
+      }
+    );
+
+    console.log('✅ SocketService configured with AppClient socket');
   }
 
   connectToRunner(runnerId: string, sessionId: string): void {
-    this.socket?.emit('connect_runner', { runnerId, sessionId });
+    if (!this.socket) {
+      console.error('❌ SocketService: No socket configured');
+      return;
+    }
+    this.socket.emit('connect_runner', { runnerId, sessionId });
   }
 
   sendInput(sessionId: string, data: string): void {
-    this.socket?.emit('terminal_input', { sessionId, data });
+    if (!this.socket) {
+      console.error('❌ SocketService: No socket configured');
+      return;
+    }
+    this.socket.emit('terminal_input', { sessionId, data });
   }
 
   resize(sessionId: string, cols: number, rows: number): void {
-    this.socket?.emit('terminal_resize', { sessionId, cols, rows });
+    if (!this.socket) {
+      console.error('❌ SocketService: No socket configured');
+      return;
+    }
+    this.socket.emit('terminal_resize', { sessionId, cols, rows });
   }
 
   on(event: string, callback: (data: any) => void): void {
@@ -87,8 +83,8 @@ class SocketService {
   }
 
   disconnect(): void {
-    this.socket?.disconnect();
-    this.socket = null;
+    // Don't disconnect the socket - it's managed by AppClient
+    // Just clean up listeners
     this.listeners.clear();
   }
 }

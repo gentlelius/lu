@@ -12,7 +12,8 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { AppClient, PairingErrorCode, PairingState } from '../src/services/app-client';
+import { PairingErrorCode, PairingState } from '../src/services/app-client';
+import { getAppClient } from '../src/services/app-client-singleton';
 import { useRouter } from 'expo-router';
 
 /**
@@ -32,7 +33,7 @@ import { useRouter } from 'expo-router';
  */
 export default function PairingScreen() {
   const router = useRouter();
-  const appClient = useRef<AppClient>(new AppClient()).current;
+  const appClient = getAppClient();
 
   // Pairing code state - three groups of 3 characters each
   const [code1, setCode1] = useState('');
@@ -61,7 +62,7 @@ export default function PairingScreen() {
     return () => {
       appClient.off('pairing:success', handlePairingSuccess);
       appClient.off('pairing:error', handlePairingError);
-      appClient.disconnect();
+      // Don't disconnect - let the singleton persist
     };
   }, []);
 
@@ -69,6 +70,13 @@ export default function PairingScreen() {
    * Connect to the broker
    */
   const connectToBroker = async () => {
+    // Check if already connected
+    if (appClient.isAppConnected()) {
+      console.log('✅ Already connected to broker');
+      setIsConnecting(false);
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
 

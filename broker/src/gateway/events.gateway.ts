@@ -122,20 +122,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() payload: { runnerId: string; sessionId: string },
   ) {
     // SECURITY: Verify that the app is paired with the runner
-    const userId = this.socketToUser.get(client.id);
-    if (!userId) {
-      console.error(`❌ Security: Unauthenticated app attempted to connect to runner ${payload.runnerId}`);
-      client.emit('error', { 
-        message: 'Not authenticated. Please authenticate first.',
-        code: 'NOT_AUTHENTICATED'
-      });
-      return;
-    }
-
-    // Check if the user is paired with this runner
-    const isPaired = await this.pairingSessionService.isPairedByUserId(userId, payload.runnerId);
-    if (!isPaired) {
-      console.error(`❌ Security: User ${userId} attempted to connect to unpaired runner ${payload.runnerId}`);
+    // Use socket.id as appSessionId (same as PairingGateway)
+    const appSessionId = client.id;
+    
+    // Check if the app is paired with this runner
+    const session = await this.pairingSessionService.getSession(appSessionId);
+    if (!session || session.runnerId !== payload.runnerId) {
+      console.error(`❌ Security: App ${appSessionId} attempted to connect to unpaired runner ${payload.runnerId}`);
       client.emit('error', { 
         message: 'Not paired with this runner. Please pair first using a pairing code.',
         code: 'NOT_PAIRED'
@@ -143,7 +136,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    console.log(`✅ Security: User ${userId} is authorized to connect to runner ${payload.runnerId}`);
+    console.log(`✅ Security: App ${appSessionId} is authorized to connect to runner ${payload.runnerId}`);
 
     // Check if runner is online
     const runner = this.runnerService.getRunner(payload.runnerId);

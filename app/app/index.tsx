@@ -16,7 +16,8 @@ import { useRouter } from 'expo-router';
 import { XTerminal, XTerminalRef } from '../src/components/XTerminal';
 import { QuickKeyboard } from '../src/components/QuickKeyboard';
 import { socketService } from '../src/services/socket';
-import { AppClient, PairingState } from '../src/services/app-client';
+import { PairingState } from '../src/services/app-client';
+import { getAppClient } from '../src/services/app-client-singleton';
 
 type ConnectionState = 
   | 'disconnected' 
@@ -29,7 +30,7 @@ type ConnectionState =
 
 export default function TerminalScreen() {
   const router = useRouter();
-  const appClient = useRef<AppClient>(new AppClient()).current;
+  const appClient = getAppClient();
   
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [pairingState, setPairingState] = useState<PairingState | null>(null);
@@ -122,11 +123,38 @@ export default function TerminalScreen() {
       appClient.off('runner:online', handleRunnerOnline);
       appClient.off('runner:offline', handleRunnerOffline);
       
-      appClient.disconnect();
+      // Don't disconnect appClient here - it should persist across navigation
+      // appClient.disconnect();
     };
   }, []);
 
   const connectToBroker = async () => {
+    // Check if already connected
+    if (appClient.isAppConnected()) {
+      console.log('✅ Already connected to broker, checking pairing status...');
+      try {
+        // Configure socketService if not already done
+        const socket = appClient.getSocket();
+        if (socket) {
+          socketService.setSocket(socket);
+        }
+        
+        const status = await appClient.getPairingStatus();
+        setPairingState(status);
+        
+        if (status.isPaired && status.runnerOnline) {
+          setConnectionState('paired');
+        } else if (status.isPaired && !status.runnerOnline) {
+          setConnectionState('runner_offline');
+        } else {
+          setConnectionState('not_paired');
+        }
+      } catch (err) {
+        console.error('❌ Failed to get pairing status:', err);
+      }
+      return;
+    }
+    
     setConnectionState('connecting');
     setError(null);
     
@@ -140,6 +168,12 @@ export default function TerminalScreen() {
       await appClient.connect(config);
       console.log('✅ Connected to broker');
       
+      // Configure socketService to use the same socket
+      const socket = appClient.getSocket();
+      if (socket) {
+        socketService.setSocket(socket);
+      }
+      
       // 检查配对状态
       const status = await appClient.getPairingStatus();
       setPairingState(status);
@@ -151,9 +185,6 @@ export default function TerminalScreen() {
       } else {
         setConnectionState('not_paired');
       }
-      
-      // 同时连接 socketService（用于终端通信）
-      await socketService.connect(config.jwtToken);
     } catch (err) {
       console.error('❌ Failed to connect to broker:', err);
       setError('Failed to connect to broker');
@@ -236,7 +267,7 @@ export default function TerminalScreen() {
   // 渲染状态指示器
   const renderStatusBadge = () => {
     let statusColor = '#6c7086';
-    let statusText = connectionState;
+    let statusText: string = connectionState;
     
     if (connectionState === 'session_active') {
       statusColor = '#a6e3a1';
@@ -246,6 +277,7 @@ export default function TerminalScreen() {
       statusText = 'paired';
     } else if (connectionState === 'connecting') {
       statusColor = '#f9e2af';
+      statusText = 'connecting';
     } else if (connectionState === 'runner_offline') {
       statusColor = '#f38ba8';
       statusText = 'offline';

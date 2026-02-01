@@ -678,4 +678,17 @@ export class AppClient {
   isAppConnected(): boolean {
     return this.isConnected;
   }
+
+  /**
+   * Get the underlying socket instance
+   * 
+   * This is used by socketService to share the same connection
+   * for terminal communication, ensuring the same session ID
+   * is used for pairing verification.
+   * 
+   * @returns The socket instance, or null if not connected
+   */
+  getSocket(): Socket | null {
+    return this.socket;
+  }
 }
