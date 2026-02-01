@@ -5,6 +5,16 @@ import { Platform } from 'react-native';
 const BROKER_URL = 'http://115.191.40.55:3000';
 console.log(`🌐 Broker URL: ${BROKER_URL}`);
 
+/**
+ * SocketService
+ * 
+ * @deprecated This service is used for terminal communication only.
+ * For pairing and authentication, use AppClient instead.
+ * 
+ * SECURITY NOTE: This service does not handle pairing verification.
+ * The broker now requires apps to be paired with runners before
+ * allowing terminal connections.
+ */
 class SocketService {
   private socket: Socket | null = null;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();

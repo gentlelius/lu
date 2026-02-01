@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { RunnerService } from '../runner/runner.service';
 import { AuthService } from '../auth/auth.service';
+import { PairingSessionService } from '../pairing/pairing-session/pairing-session.service';
 
 interface RunnerRegisterPayload {
   runnerId: string;
@@ -45,6 +46,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly runnerService: RunnerService,
     private readonly authService: AuthService,
+    private readonly pairingSessionService: PairingSessionService,
   ) {}
 
   handleConnection(client: Socket) {
@@ -115,10 +117,35 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // App 请求连接 Runner
   @SubscribeMessage('connect_runner')
-  handleConnectRunner(
+  async handleConnectRunner(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { runnerId: string; sessionId: string },
   ) {
+    // SECURITY: Verify that the app is paired with the runner
+    const userId = this.socketToUser.get(client.id);
+    if (!userId) {
+      console.error(`❌ Security: Unauthenticated app attempted to connect to runner ${payload.runnerId}`);
+      client.emit('error', { 
+        message: 'Not authenticated. Please authenticate first.',
+        code: 'NOT_AUTHENTICATED'
+      });
+      return;
+    }
+
+    // Check if the user is paired with this runner
+    const isPaired = await this.pairingSessionService.isPairedByUserId(userId, payload.runnerId);
+    if (!isPaired) {
+      console.error(`❌ Security: User ${userId} attempted to connect to unpaired runner ${payload.runnerId}`);
+      client.emit('error', { 
+        message: 'Not paired with this runner. Please pair first using a pairing code.',
+        code: 'NOT_PAIRED'
+      });
+      return;
+    }
+
+    console.log(`✅ Security: User ${userId} is authorized to connect to runner ${payload.runnerId}`);
+
+    // Check if runner is online
     const runner = this.runnerService.getRunner(payload.runnerId);
     if (!runner) {
       client.emit('error', { message: 'Runner not found or offline' });

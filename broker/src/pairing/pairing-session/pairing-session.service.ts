@@ -301,4 +301,71 @@ export class PairingSessionService {
     
     return apps;
   }
+
+  /**
+   * Check if a user (by userId) is paired with a specific runner
+   * 
+   * This method is used for authorization checks to ensure that a user
+   * can only connect to runners they have been paired with.
+   * 
+   * Note: This uses the userId-based pairing (from pairing gateway),
+   * not the session-based pairing (from this service).
+   * 
+   * Requirements: 7.1, 7.2, Security
+   * 
+   * @param userId - User ID (from JWT token)
+   * @param runnerId - Runner ID to check
+   * @returns true if the user is paired with the runner, false otherwise
+   * 
+   * @example
+   * const canConnect = await service.isPairedByUserId('user-123', 'runner-456');
+   * if (canConnect) {
+   *   console.log('User is authorized to connect to this runner');
+   * } else {
+   *   console.log('User is not paired with this runner');
+   * }
+   */
+  async isPairedByUserId(userId: string, runnerId: string): Promise<boolean> {
+    const redis = this.redisService.getClient();
+    
+    // Check the userId-based pairing (created by pairing gateway)
+    const key = `pairing:session:app:${userId}`;
+    const pairedRunnerId = await redis.get(key);
+    
+    const isPaired = pairedRunnerId === runnerId;
+    
+    this.logger.debug(
+      `Pairing check for user ${userId} and runner ${runnerId}: ${isPaired}`,
+    );
+    
+    return isPaired;
+  }
+
+  /**
+   * Get the runner ID that a user is paired with
+   * 
+   * Requirements: 7.1, 7.2
+   * 
+   * @param userId - User ID (from JWT token)
+   * @returns Runner ID if paired, null otherwise
+   * 
+   * @example
+   * const runnerId = await service.getPairedRunnerByUserId('user-123');
+   * if (runnerId) {
+   *   console.log('User is paired with runner:', runnerId);
+   * } else {
+   *   console.log('User is not paired with any runner');
+   * }
+   */
+  async getPairedRunnerByUserId(userId: string): Promise<string | null> {
+    const redis = this.redisService.getClient();
+    const key = `pairing:session:app:${userId}`;
+    const runnerId = await redis.get(key);
+    
+    this.logger.debug(
+      `Get paired runner for user ${userId}: ${runnerId || 'none'}`,
+    );
+    
+    return runnerId;
+  }
 }

@@ -4,6 +4,7 @@ import { EventsGateway } from './gateway/events.gateway';
 import { RunnerService } from './runner/runner.service';
 import { AuthService } from './auth/auth.service';
 import { RedisModule } from './pairing/redis';
+import { PairingSessionService } from './pairing/pairing-session';
 
 @Module({
   imports: [
@@ -13,6 +14,6 @@ import { RedisModule } from './pairing/redis';
     }),
     RedisModule,
   ],
-  providers: [EventsGateway, RunnerService, AuthService],
+  providers: [EventsGateway, RunnerService, AuthService, PairingSessionService],
 })
 export class AppModule {}
