@@ -106,20 +106,19 @@ export default function PairingScreen() {
     setIsPairing(false);
     setError(null);
 
-    // Show success message
-    Alert.alert(
-      'Pairing Successful',
-      `Successfully paired with runner: ${state.runnerId}`,
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Navigate to terminal screen
-            router.replace('/');
-          },
-        },
-      ]
-    );
+    // Navigate to terminal screen immediately
+    console.log('🔄 Navigating to terminal screen...');
+    router.replace('/');
+    
+    // Show success message after navigation (optional, for native platforms)
+    if (Platform.OS !== 'web') {
+      setTimeout(() => {
+        Alert.alert(
+          'Pairing Successful',
+          `Successfully paired with runner: ${state.runnerId}`
+        );
+      }, 500);
+    }
   };
 
   /**

@@ -43,6 +43,8 @@ export default function TerminalScreen() {
   
   // 使用 ref 追踪当前活跃的 sessionId，避免闭包问题
   const activeSessionRef = useRef<string>('');
+  // 缓存终端尺寸，session 创建后立即同步到 runner
+  const terminalSizeRef = useRef<{ cols: number; rows: number }>({ cols: 80, rows: 24 });
   // 防抖标志
   const isStartingSession = useRef(false);
 
@@ -62,6 +64,11 @@ export default function TerminalScreen() {
       isStartingSession.current = false;
       setSessionId(data.sessionId);
       setConnectionState('session_active');
+      socketService.resize(
+        data.sessionId,
+        terminalSizeRef.current.cols,
+        terminalSizeRef.current.rows
+      );
       terminalRef.current?.write('\r\n--- Session started ---\r\n');
     };
 
@@ -246,6 +253,13 @@ export default function TerminalScreen() {
     }
   }, [sessionId]);
 
+  const handleTerminalResize = useCallback((size: { cols: number; rows: number }) => {
+    terminalSizeRef.current = size;
+    if (sessionId) {
+      socketService.resize(sessionId, size.cols, size.rows);
+    }
+  }, [sessionId]);
+
   // 快捷键处理
   const handleQuickKey = useCallback(
     (key: string) => {
@@ -393,6 +407,7 @@ export default function TerminalScreen() {
           <XTerminal
             ref={terminalRef}
             onInput={handleTerminalInput}
+            onResize={handleTerminalResize}
             fontSize={14}
           />
 

@@ -9,6 +9,7 @@ if (Platform.OS !== 'web') {
 
 interface XTerminalProps {
   onInput?: (data: string) => void;
+  onResize?: (size: { cols: number; rows: number }) => void;
   fontSize?: number;
   theme?: 'dark' | 'light';
 }
@@ -188,7 +189,7 @@ const getTerminalHTML = (fontSize: number = 14) => `
 
 // Web 平台实现 - 直接使用 xterm.js
 const XTerminalWeb = forwardRef<XTerminalRef, XTerminalProps>(
-  ({ onInput, fontSize = 14, theme = 'dark' }, ref) => {
+  ({ onInput, onResize, fontSize = 14, theme = 'dark' }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const terminalRef = useRef<any>(null);
     const fitAddonRef = useRef<any>(null);
@@ -289,6 +290,10 @@ const XTerminalWeb = forwardRef<XTerminalRef, XTerminalProps>(
           const handleResize = () => {
             if (fitAddonRef.current) {
               fitAddonRef.current.fit();
+              onResize?.({
+                cols: terminal.cols,
+                rows: terminal.rows,
+              });
             }
           };
 
@@ -298,6 +303,10 @@ const XTerminalWeb = forwardRef<XTerminalRef, XTerminalProps>(
           setTimeout(() => {
             if (fitAddonRef.current) {
               fitAddonRef.current.fit();
+              onResize?.({
+                cols: terminal.cols,
+                rows: terminal.rows,
+              });
             }
           }, 100);
 
@@ -319,7 +328,7 @@ const XTerminalWeb = forwardRef<XTerminalRef, XTerminalProps>(
         }
         isInitialized.current = false;
       };
-    }, [fontSize, onInput]);
+    }, [fontSize, onInput, onResize]);
 
     return (
       <View style={styles.container}>
@@ -338,7 +347,7 @@ const XTerminalWeb = forwardRef<XTerminalRef, XTerminalProps>(
 
 // 原生平台实现 - 使用 WebView
 const XTerminalNative = forwardRef<XTerminalRef, XTerminalProps>(
-  ({ onInput, fontSize = 14 }, ref) => {
+  ({ onInput, onResize, fontSize = 14 }, ref) => {
     const webViewRef = useRef<any>(null);
     const isReady = useRef(false);
     const pendingWrites = useRef<string[]>([]);
@@ -385,12 +394,16 @@ const XTerminalNative = forwardRef<XTerminalRef, XTerminalProps>(
             break;
           case 'resize':
             console.log(`📐 Terminal resized: ${message.cols}x${message.rows}`);
+            onResize?.({
+              cols: message.cols,
+              rows: message.rows,
+            });
             break;
         }
       } catch (e) {
         console.error('Failed to parse WebView message:', e);
       }
-    }, [onInput, sendMessage]);
+    }, [onInput, onResize, sendMessage]);
 
     if (!WebView) {
       return <View style={styles.container} />;

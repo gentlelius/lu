@@ -5,11 +5,15 @@ export interface PtySession {
   sessionId: string;
   pty: IPty;
   outputBuffer: string[];
+  lastOutput: string;
+  lastOutputTime: number;
+  duplicateCount: number;
 }
 
 export class PtyManager {
   private sessions = new Map<string, PtySession>();
   private readonly maxBufferLines = 1000;
+  private readonly duplicateThresholdMs = 100; // 100ms 内的重复输出会被过滤
 
   createSession(
     sessionId: string,
@@ -42,10 +46,35 @@ export class PtyManager {
       sessionId,
       pty: ptyProcess,
       outputBuffer: [],
+      lastOutput: '',
+      lastOutputTime: 0,
+      duplicateCount: 0,
     };
 
     // 监听输出
     ptyProcess.onData((data) => {
+      const now = Date.now();
+      const timeDiff = now - session.lastOutputTime;
+      
+      // 检查是否是重复输出
+      if (data === session.lastOutput && timeDiff < this.duplicateThresholdMs) {
+        session.duplicateCount++;
+        console.log(`🔄 [${sessionId}] Duplicate output filtered (count: ${session.duplicateCount})`);
+        return; // 过滤掉重复输出
+      }
+      
+      // 重置重复计数
+      if (data !== session.lastOutput) {
+        if (session.duplicateCount > 0) {
+          console.log(`✅ [${sessionId}] Filtered ${session.duplicateCount} duplicate outputs`);
+        }
+        session.duplicateCount = 0;
+      }
+      
+      // 更新最后输出
+      session.lastOutput = data;
+      session.lastOutputTime = now;
+      
       console.log(`📤 [${sessionId}] output: ${JSON.stringify(data.substring(0, 100))}`);
       session.outputBuffer.push(data);
       if (session.outputBuffer.length > this.maxBufferLines) {
