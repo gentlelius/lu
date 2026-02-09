@@ -7,13 +7,13 @@ Remote terminal runner for Cli Remote project. This package allows you to run a 
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g claude-remote-runner
+npm install -g cli-remote-runner
 ```
 
 ### Local Installation
 
 ```bash
-npm install claude-remote-runner
+npm install cli-remote-runner
 ```
 
 ## Usage

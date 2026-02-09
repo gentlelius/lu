@@ -40,7 +40,7 @@ if ! command -v pm2 &> /dev/null; then
 fi
 
 # 启动或重启服务
-if pm2 list | grep -q "claude-remote-broker"; then
+if pm2 list | grep -q "cli-remote-broker"; then
   echo "🔄 重启服务..."
   pnpm pm2:restart
 else
@@ -55,5 +55,5 @@ echo ""
 echo "✅ 部署完成！"
 echo ""
 echo "📊 查看状态: pm2 status"
-echo "📋 查看日志: pm2 logs claude-remote-broker"
+echo "📋 查看日志: pm2 logs cli-remote-broker"
 echo "🔍 监控: pm2 monit"

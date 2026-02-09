@@ -14,8 +14,8 @@
 ssh user@your-server-ip
 
 # 2. 克隆代码
-git clone <your-repo-url> /opt/claude-remote
-cd /opt/claude-remote/broker
+git clone <your-repo-url> /opt/cli-remote
+cd /opt/cli-remote/broker
 
 # 3. 运行一键部署脚本
 chmod +x quick-deploy.sh
@@ -34,7 +34,7 @@ chmod +x quick-deploy.sh
 #### 步骤 1：安装 Redis
 
 ```bash
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 chmod +x setup-redis.sh
 ./setup-redis.sh
 ```
@@ -116,7 +116,7 @@ pm2 start ecosystem.config.js
 pm2 status
 
 # 查看日志
-pm2 logs claude-remote-broker --lines 20
+pm2 logs cli-remote-broker --lines 20
 ```
 
 应该看到：
@@ -139,7 +139,7 @@ redis-cli -a your-redis-password ping
 
 在另一台机器上启动 runner：
 ```bash
-npm install -g claude-remote-runner
+npm install -g cli-remote-runner
 claude-runner --url http://your-server-ip:3000 --id test-runner --secret test-secret
 ```
 
@@ -156,13 +156,13 @@ claude-runner --url http://your-server-ip:3000 --id test-runner --secret test-se
 pm2 status
 
 # 查看日志
-pm2 logs claude-remote-broker
+pm2 logs cli-remote-broker
 
 # 重启
-pm2 restart claude-remote-broker
+pm2 restart cli-remote-broker
 
 # 停止
-pm2 stop claude-remote-broker
+pm2 stop cli-remote-broker
 
 # 监控
 pm2 monit
@@ -245,7 +245,7 @@ crontab -e
 添加：
 ```cron
 # 每 5 分钟检查一次
-*/5 * * * * curl -f http://localhost:3000 || pm2 restart claude-remote-broker
+*/5 * * * * curl -f http://localhost:3000 || pm2 restart cli-remote-broker
 ```
 
 ---
@@ -269,13 +269,13 @@ sudo journalctl -u redis-server -n 50
 
 ```bash
 # 查看详细日志
-pm2 logs claude-remote-broker --lines 100
+pm2 logs cli-remote-broker --lines 100
 
 # 检查端口占用
 sudo lsof -i :3000
 
 # 手动启动查看错误
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 node dist/main.js
 ```
 

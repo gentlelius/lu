@@ -60,16 +60,16 @@ npm install -g pnpm
 
 ```bash
 # 方式 A: Git
-git clone <your-repo> /opt/claude-remote
+git clone <your-repo> /opt/cli-remote
 
 # 方式 B: rsync
-rsync -avz --exclude 'node_modules' ./ user@ecs-ip:/opt/claude-remote/
+rsync -avz --exclude 'node_modules' ./ user@ecs-ip:/opt/cli-remote/
 ```
 
 ### 3. 部署 Broker
 
 ```bash
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 
 # 配置环境变量
 cp .env.example .env
@@ -120,7 +120,7 @@ npm publish
 ### 3. 客户端使用
 
 ```bash
-npm install -g claude-remote-runner
+npm install -g cli-remote-runner
 
 # 配置
 echo "BROKER_URL=http://your-ecs-ip:3000
@@ -153,7 +153,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ```bash
 pm2 status
-pm2 logs claude-remote-broker
+pm2 logs cli-remote-broker
 curl http://your-ecs-ip:3000
 ```
 

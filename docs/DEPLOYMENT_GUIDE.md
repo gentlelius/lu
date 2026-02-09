@@ -191,8 +191,8 @@ npm install -g pm2
 npm install -g pnpm
 
 # 4. 创建部署目录
-sudo mkdir -p /opt/claude-remote
-sudo chown $USER:$USER /opt/claude-remote
+sudo mkdir -p /opt/cli-remote
+sudo chown $USER:$USER /opt/cli-remote
 ```
 
 ### 2.2 部署代码
@@ -208,7 +208,7 @@ nano broker/deploy-to-ecs.sh
 # 修改以下配置：
 # ECS_HOST="your-ecs-ip"
 # ECS_USER="your-username"
-# ECS_PATH="/opt/claude-remote"
+# ECS_PATH="/opt/cli-remote"
 
 # 2. 执行部署
 cd broker
@@ -223,11 +223,11 @@ chmod +x deploy-to-ecs.sh
 
 # 1. 克隆代码
 cd /opt
-git clone <your-repo-url> claude-remote
-cd claude-remote/broker
+git clone <your-repo-url> cli-remote
+cd cli-remote/broker
 
 # 或使用 rsync 从本地上传
-# rsync -avz --exclude 'node_modules' ./ user@ecs-ip:/opt/claude-remote/broker/
+# rsync -avz --exclude 'node_modules' ./ user@ecs-ip:/opt/cli-remote/broker/
 
 # 2. 安装依赖
 npm install
@@ -239,7 +239,7 @@ npm run build
 ### 2.3 配置环境变量
 
 ```bash
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 
 # 1. 复制环境变量模板
 cp .env.example .env
@@ -303,7 +303,7 @@ node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
 
 ### 2.5 创建启动脚本
 
-创建 `/opt/claude-remote/broker/start.sh`:
+创建 `/opt/cli-remote/broker/start.sh`:
 
 ```bash
 #!/bin/bash
@@ -343,7 +343,7 @@ npm run build
 mkdir -p logs
 
 # 停止旧进程（如果存在）
-pm2 delete claude-remote-broker 2>/dev/null || true
+pm2 delete cli-remote-broker 2>/dev/null || true
 
 # 启动服务
 echo "🚀 启动服务..."
@@ -363,9 +363,9 @@ echo ""
 echo "✅ 启动完成！"
 echo ""
 echo "📊 查看状态: pm2 status"
-echo "📋 查看日志: pm2 logs claude-remote-broker"
-echo "🔄 重启服务: pm2 restart claude-remote-broker"
-echo "🛑 停止服务: pm2 stop claude-remote-broker"
+echo "📋 查看日志: pm2 logs cli-remote-broker"
+echo "🔄 重启服务: pm2 restart cli-remote-broker"
+echo "🛑 停止服务: pm2 stop cli-remote-broker"
 ```
 
 ```bash
@@ -383,13 +383,13 @@ chmod +x start.sh
 pm2 status
 
 # 查看日志
-pm2 logs claude-remote-broker --lines 50
+pm2 logs cli-remote-broker --lines 50
 
 # 测试 HTTP 连接
 curl http://localhost:3000
 
 # 测试 Redis 连接
-pm2 logs claude-remote-broker | grep -i redis
+pm2 logs cli-remote-broker | grep -i redis
 # 应该看到: "Redis connected" 和 "Redis ready"
 ```
 
@@ -436,7 +436,7 @@ sudo firewall-cmd --reload
 sudo apt install nginx -y
 
 # 创建配置文件
-sudo nano /etc/nginx/sites-available/claude-remote
+sudo nano /etc/nginx/sites-available/cli-remote
 ```
 
 Nginx 配置：
@@ -471,7 +471,7 @@ server {
 
 ```bash
 # 启用配置
-sudo ln -s /etc/nginx/sites-available/claude-remote /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/cli-remote /etc/nginx/sites-enabled/
 
 # 测试配置
 sudo nginx -t
@@ -506,10 +506,10 @@ redis-cli -a your-redis-password ping
 
 # 2. 检查 Broker
 pm2 status
-# 应该显示 claude-remote-broker 状态为 online
+# 应该显示 cli-remote-broker 状态为 online
 
 # 3. 检查日志
-pm2 logs claude-remote-broker --lines 20
+pm2 logs cli-remote-broker --lines 20
 # 应该看到:
 # - "Redis connected"
 # - "Redis ready"
@@ -573,7 +573,7 @@ cd runner
 npm start -- --url http://your-ecs-ip:3000 --id test-runner --secret test-secret
 
 # 2. 查看 broker 日志，应该看到 runner 注册成功
-pm2 logs claude-remote-broker
+pm2 logs cli-remote-broker
 
 # 3. 使用 app 进行配对测试
 # 在 app 中输入 runner 显示的配对码
@@ -602,7 +602,7 @@ sudo netstat -tlnp | grep 6379
 redis-cli -h localhost -p 6379 -a your-password ping
 
 # 4. 检查 .env 配置
-cat /opt/claude-remote/broker/.env | grep REDIS
+cat /opt/cli-remote/broker/.env | grep REDIS
 
 # 5. 检查防火墙
 sudo ufw status
@@ -621,17 +621,17 @@ sudo ufw status
 
 ```bash
 # 1. 查看详细日志
-pm2 logs claude-remote-broker --lines 100
+pm2 logs cli-remote-broker --lines 100
 
 # 2. 检查端口占用
 sudo lsof -i :3000
 
 # 3. 手动启动查看错误
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 node dist/main.js
 
 # 4. 检查环境变量
-pm2 show claude-remote-broker
+pm2 show cli-remote-broker
 ```
 
 **常见错误**:
@@ -679,7 +679,7 @@ redis-cli -a your-password
 > GET runner:heartbeat:runner-1
 
 # 3. 查看 broker 日志
-pm2 logs claude-remote-broker | grep -i pairing
+pm2 logs cli-remote-broker | grep -i pairing
 
 # 4. 检查速率限制
 > GET pairing:rate:app:user-id
@@ -726,24 +726,24 @@ ping your-ecs-ip
 pm2 status
 
 # 查看日志
-pm2 logs claude-remote-broker
-pm2 logs claude-remote-broker --lines 100
-pm2 logs claude-remote-broker --err  # 只看错误日志
+pm2 logs cli-remote-broker
+pm2 logs cli-remote-broker --lines 100
+pm2 logs cli-remote-broker --err  # 只看错误日志
 
 # 重启服务
-pm2 restart claude-remote-broker
+pm2 restart cli-remote-broker
 
 # 停止服务
-pm2 stop claude-remote-broker
+pm2 stop cli-remote-broker
 
 # 删除服务
-pm2 delete claude-remote-broker
+pm2 delete cli-remote-broker
 
 # 监控
 pm2 monit
 
 # 查看详细信息
-pm2 show claude-remote-broker
+pm2 show cli-remote-broker
 
 # 清空日志
 pm2 flush
@@ -818,11 +818,11 @@ journalctl -u redis-server -f
 
 # 方法 B: 手动更新
 ssh user@your-ecs-ip
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 git pull
 npm install
 npm run build
-pm2 restart claude-remote-broker
+pm2 restart cli-remote-broker
 ```
 
 ### 7.2 回滚版本
@@ -837,7 +837,7 @@ git checkout <commit-hash>
 # 3. 重新构建和重启
 npm install
 npm run build
-pm2 restart claude-remote-broker
+pm2 restart cli-remote-broker
 ```
 
 ### 7.3 备份和恢复
@@ -848,7 +848,7 @@ redis-cli -a your-password SAVE
 cp /var/lib/redis/dump.rdb /backup/dump.rdb.$(date +%Y%m%d)
 
 # 备份配置文件
-cp /opt/claude-remote/broker/.env /backup/.env.$(date +%Y%m%d)
+cp /opt/cli-remote/broker/.env /backup/.env.$(date +%Y%m%d)
 
 # 恢复 Redis 数据
 sudo systemctl stop redis-server
@@ -885,7 +885,7 @@ pm2 set pm2-logrotate:compress true
 # 检查 Broker
 if ! curl -f http://localhost:3000 > /dev/null 2>&1; then
     echo "❌ Broker is down"
-    pm2 restart claude-remote-broker
+    pm2 restart cli-remote-broker
     # 发送告警邮件或通知
 fi
 
@@ -901,7 +901,7 @@ fi
 # 添加到 crontab
 crontab -e
 # 每 5 分钟检查一次
-*/5 * * * * /opt/claude-remote/broker/health-check.sh
+*/5 * * * * /opt/cli-remote/broker/health-check.sh
 ```
 
 ---
@@ -909,7 +909,7 @@ crontab -e
 ## 需要帮助？
 
 如果遇到问题：
-1. 查看日志：`pm2 logs claude-remote-broker`
+1. 查看日志：`pm2 logs cli-remote-broker`
 2. 检查 Redis：`redis-cli -a your-password ping`
 3. 查看本文档的故障排查部分
 4. 联系技术支持

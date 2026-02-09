@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: 'claude-remote-broker',
+    name: 'cli-remote-broker',
     script: './dist/main.js',
     instances: 1,
     exec_mode: 'cluster',

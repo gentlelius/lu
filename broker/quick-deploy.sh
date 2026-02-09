@@ -195,7 +195,7 @@ echo ""
 mkdir -p logs
 
 # 停止旧进程（如果存在）
-pm2 delete claude-remote-broker 2>/dev/null || true
+pm2 delete cli-remote-broker 2>/dev/null || true
 
 # 启动服务
 echo "启动 Broker..."
@@ -222,7 +222,7 @@ echo ""
 
 # 检查日志
 echo "最近日志:"
-pm2 logs claude-remote-broker --lines 10 --nostream
+pm2 logs cli-remote-broker --lines 10 --nostream
 
 echo ""
 
@@ -244,13 +244,13 @@ echo ""
 echo "📊 服务信息:"
 echo "  状态: $(pm2 jlist | jq -r '.[0].pm2_env.status')"
 echo "  端口: $(grep PORT .env | cut -d'=' -f2)"
-echo "  进程: claude-remote-broker"
+echo "  进程: cli-remote-broker"
 echo ""
 echo "🔧 常用命令:"
 echo "  查看状态: pm2 status"
-echo "  查看日志: pm2 logs claude-remote-broker"
-echo "  重启服务: pm2 restart claude-remote-broker"
-echo "  停止服务: pm2 stop claude-remote-broker"
+echo "  查看日志: pm2 logs cli-remote-broker"
+echo "  重启服务: pm2 restart cli-remote-broker"
+echo "  停止服务: pm2 stop cli-remote-broker"
 echo ""
 echo "🌐 访问地址:"
 echo "  本地: http://localhost:3000"

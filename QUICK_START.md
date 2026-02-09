@@ -33,7 +33,7 @@ claude-runner --url http://localhost:3000 --id test-runner --secret secret-runne
 
 ```bash
 # 在 ECS 上
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 chmod +x start.sh
 ./start.sh
 ```
@@ -75,7 +75,7 @@ npm publish
 
 ```bash
 # 安装
-npm install -g claude-remote-runner
+npm install -g cli-remote-runner
 
 # 配置
 echo "BROKER_URL=http://your-ecs-ip:3000
@@ -97,13 +97,13 @@ claude-runner
 pm2 status
 
 # 查看日志
-pm2 logs claude-remote-broker
+pm2 logs cli-remote-broker
 
 # 重启
-pm2 restart claude-remote-broker
+pm2 restart cli-remote-broker
 
 # 停止
-pm2 stop claude-remote-broker
+pm2 stop cli-remote-broker
 
 # 监控
 pm2 monit
@@ -130,13 +130,13 @@ claude-runner --url http://broker.com:3000 --id my-runner --secret my-secret
 
 ```bash
 # 检查日志
-pm2 logs claude-remote-broker --lines 50
+pm2 logs cli-remote-broker --lines 50
 
 # 检查端口
 lsof -i :3000
 
 # 检查环境变量
-pm2 show claude-remote-broker
+pm2 show cli-remote-broker
 ```
 
 ### Runner 无法连接

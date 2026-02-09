@@ -53,21 +53,21 @@ nano deploy-to-ecs.sh
 ```bash
 # 在 ECS 上
 cd /opt
-git clone <your-repo-url> claude-remote
-cd claude-remote
+git clone <your-repo-url> cli-remote
+cd cli-remote
 ```
 
 方式 C: 使用 rsync/scp
 
 ```bash
 # 在本地
-rsync -avz --exclude 'node_modules' ./ user@your-ecs-ip:/opt/claude-remote/
+rsync -avz --exclude 'node_modules' ./ user@your-ecs-ip:/opt/cli-remote/
 ```
 
 #### 2.2 安装依赖并构建
 
 ```bash
-cd /opt/claude-remote
+cd /opt/cli-remote
 
 # 安装依赖
 pnpm install
@@ -80,7 +80,7 @@ pnpm build
 #### 2.3 配置环境变量
 
 ```bash
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 cp .env.example .env
 nano .env
 ```
@@ -103,13 +103,13 @@ CORS_ORIGINS=*
 #### 2.4 创建日志目录
 
 ```bash
-mkdir -p /opt/claude-remote/broker/logs
+mkdir -p /opt/cli-remote/broker/logs
 ```
 
 #### 2.5 启动服务
 
 ```bash
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 pnpm pm2:start
 ```
 
@@ -117,7 +117,7 @@ pnpm pm2:start
 
 ```bash
 pm2 status
-pm2 logs claude-remote-broker
+pm2 logs cli-remote-broker
 ```
 
 #### 2.7 设置开机自启
@@ -190,7 +190,7 @@ npm publish --access restricted
 #### 2.1 全局安装
 
 ```bash
-npm install -g claude-remote-runner
+npm install -g cli-remote-runner
 ```
 
 #### 2.2 配置
@@ -226,25 +226,25 @@ claude-runner --url http://your-ecs-ip:3000 --id my-laptop --secret my-secure-se
 pm2 status
 
 # 查看日志
-pm2 logs claude-remote-broker
+pm2 logs cli-remote-broker
 
 # 重启服务
-pm2 restart claude-remote-broker
+pm2 restart cli-remote-broker
 
 # 停止服务
-pm2 stop claude-remote-broker
+pm2 stop cli-remote-broker
 
 # 监控
 pm2 monit
 
 # 查看详细信息
-pm2 show claude-remote-broker
+pm2 show cli-remote-broker
 ```
 
 ### 更新部署
 
 ```bash
-cd /opt/claude-remote
+cd /opt/cli-remote
 
 # 拉取最新代码
 git pull
@@ -260,14 +260,14 @@ pnpm pm2:restart
 
 ### 日志管理
 
-日志位置: `/opt/claude-remote/broker/logs/`
+日志位置: `/opt/cli-remote/broker/logs/`
 
 ```bash
 # 查看错误日志
-tail -f /opt/claude-remote/broker/logs/err.log
+tail -f /opt/cli-remote/broker/logs/err.log
 
 # 查看输出日志
-tail -f /opt/claude-remote/broker/logs/out.log
+tail -f /opt/cli-remote/broker/logs/out.log
 
 # 清理旧日志
 pm2 flush
@@ -327,12 +327,12 @@ lsof -i :3000
 
 2. 检查日志：
 ```bash
-pm2 logs claude-remote-broker --lines 100
+pm2 logs cli-remote-broker --lines 100
 ```
 
 3. 检查环境变量：
 ```bash
-pm2 show claude-remote-broker
+pm2 show cli-remote-broker
 ```
 
 ### Runner 无法连接

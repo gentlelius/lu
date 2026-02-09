@@ -8,7 +8,7 @@ set -e
 # ========== 配置区域 ==========
 ECS_HOST="your-ecs-ip"
 ECS_USER="root"
-ECS_PATH="/opt/claude-remote"
+ECS_PATH="/opt/cli-remote"
 ECS_PORT="22"
 
 # ========== 脚本开始 ==========

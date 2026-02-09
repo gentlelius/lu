@@ -13,7 +13,7 @@ import { PairingHistoryService } from './pairing/pairing-history/pairing-history
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'claude-remote-secret-key',
+      secret: process.env.JWT_SECRET || 'cli-remote-secret-key',
       signOptions: { expiresIn: '7d' },
     }),
     RedisModule,

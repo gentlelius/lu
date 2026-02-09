@@ -18,7 +18,7 @@ nano deploy-to-ecs.sh
 ```bash
 ECS_HOST="your-ecs-ip"           # 改为你的 ECS IP
 ECS_USER="root"                   # 改为你的 SSH 用户名
-ECS_PATH="/opt/claude-remote"     # 部署目录（可选）
+ECS_PATH="/opt/cli-remote"     # 部署目录（可选）
 ECS_PORT="22"                     # SSH 端口（可选）
 ```
 
@@ -53,7 +53,7 @@ ECS_PORT="22"                     # SSH 端口（可选）
 ssh user@your-ecs-ip
 
 # 进入目录
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 
 # 首次部署需要配置环境变量
 cp .env.example .env
@@ -86,7 +86,7 @@ nano deploy-to-ecs.sh
 # 3. 首次部署会提示配置 .env
 # SSH 登录到 ECS 配置环境变量
 ssh user@your-ecs-ip
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 nano .env  # 编辑配置
 
 # 4. 再次执行部署
@@ -111,7 +111,7 @@ nano .env  # 编辑配置
 ssh user@your-ecs-ip 'pm2 status'
 
 # 查看日志
-ssh user@your-ecs-ip 'pm2 logs claude-remote-broker --lines 50'
+ssh user@your-ecs-ip 'pm2 logs cli-remote-broker --lines 50'
 
 # 测试连接
 curl http://your-ecs-ip:3000
@@ -127,7 +127,7 @@ ssh user@your-ecs-ip
 pm2 status
 
 # 查看日志
-pm2 logs claude-remote-broker
+pm2 logs cli-remote-broker
 
 # 实时监控
 pm2 monit
@@ -146,7 +146,7 @@ A: 检查：
 ### Q: broker/start.sh 提示 .env 不存在？
 A: 首次部署需要配置环境变量：
 ```bash
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 cp .env.example .env
 nano .env  # 编辑配置
 ./start.sh
@@ -162,7 +162,7 @@ npm install -g pm2
 A: 
 ```bash
 # 在 ECS 上
-cd /opt/claude-remote
+cd /opt/cli-remote
 git checkout <previous-commit>
 cd broker
 ./start.sh

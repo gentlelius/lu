@@ -22,7 +22,7 @@
 
 ```bash
 # 在服务器上执行
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 ./quick-deploy.sh
 ```
 
@@ -42,7 +42,7 @@ cd /opt/claude-remote/broker
 
 #### 步骤 1：配置 Redis
 ```bash
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 ./setup-redis.sh
 ```
 
@@ -199,7 +199,7 @@ redis-cli -a your-password INFO server
 pm2 status
 
 # 查看日志（应该看到 Redis connected）
-pm2 logs claude-remote-broker --lines 20
+pm2 logs cli-remote-broker --lines 20
 ```
 
 ### 3. 测试 HTTP
@@ -242,7 +242,7 @@ npm start -- --url http://your-server-ip:3000 --id test-runner --secret test-sec
 pm2 status
 
 # 查看最近日志
-pm2 logs claude-remote-broker --lines 50
+pm2 logs cli-remote-broker --lines 50
 
 # 查看 Redis 状态
 redis-cli -a your-password INFO stats
@@ -257,17 +257,17 @@ df -h
 
 ```bash
 # 每周检查日志大小
-du -sh /opt/claude-remote/broker/logs/
+du -sh /opt/cli-remote/broker/logs/
 
 # 每月备份 Redis 数据
 redis-cli -a your-password SAVE
 cp /var/lib/redis/dump.rdb /backup/
 
 # 每月更新依赖
-cd /opt/claude-remote/broker
+cd /opt/cli-remote/broker
 npm update
 npm audit fix
-pm2 restart claude-remote-broker
+pm2 restart cli-remote-broker
 ```
 
 ---
@@ -297,7 +297,7 @@ cat .env | grep REDIS
 **解决**：
 ```bash
 # 查看详细错误
-pm2 logs claude-remote-broker --lines 100
+pm2 logs cli-remote-broker --lines 100
 
 # 常见原因：
 # - 端口被占用 → 修改 PORT 或停止占用进程
@@ -320,7 +320,7 @@ redis-cli -a your-password
 > KEYS runner:heartbeat:*
 
 # 3. 查看 broker 日志
-pm2 logs claude-remote-broker | grep -i pairing
+pm2 logs cli-remote-broker | grep -i pairing
 ```
 
 ---
@@ -329,7 +329,7 @@ pm2 logs claude-remote-broker | grep -i pairing
 
 如果遇到问题：
 
-1. **查看日志**：`pm2 logs claude-remote-broker`
+1. **查看日志**：`pm2 logs cli-remote-broker`
 2. **检查 Redis**：`redis-cli -a your-password ping`
 3. **查看文档**：
    - [完整部署指南](./DEPLOYMENT_GUIDE.md)

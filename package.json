@@ -1,5 +1,5 @@
 {
-  "name": "claude-remote",
+  "name": "cli-remote",
   "private": true,
   "scripts": {
     "dev:broker": "pnpm --filter broker dev",

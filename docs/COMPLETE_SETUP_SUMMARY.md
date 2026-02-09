@@ -257,7 +257,7 @@ pm2 status
 # 应该显示: online
 
 # 查看日志
-pm2 logs claude-remote-broker --lines 20
+pm2 logs cli-remote-broker --lines 20
 # 应该看到: "Redis connected" 和 "Redis ready"
 ```
 
@@ -300,9 +300,9 @@ npm start -- --url http://your-server-ip:3000 --id test --secret test-secret
 ### PM2 管理
 ```bash
 pm2 status                          # 查看状态
-pm2 logs claude-remote-broker       # 查看日志
-pm2 restart claude-remote-broker    # 重启
-pm2 stop claude-remote-broker       # 停止
+pm2 logs cli-remote-broker       # 查看日志
+pm2 restart cli-remote-broker    # 重启
+pm2 stop cli-remote-broker       # 停止
 pm2 monit                           # 监控
 ```
 
@@ -349,7 +349,7 @@ cat .env | grep REDIS
 ### Broker 启动失败
 ```bash
 # 1. 查看日志
-pm2 logs claude-remote-broker --lines 100
+pm2 logs cli-remote-broker --lines 100
 
 # 2. 检查端口
 sudo lsof -i :3000
@@ -377,7 +377,7 @@ pm2 logs | grep -i pairing
 
 如果遇到问题：
 
-1. **查看日志**：`pm2 logs claude-remote-broker`
+1. **查看日志**：`pm2 logs cli-remote-broker`
 2. **检查 Redis**：`redis-cli -a your-password ping`
 3. **查看文档**：
    - [快速部署指南](./QUICK_START_DEPLOYMENT.md)

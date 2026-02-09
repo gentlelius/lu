@@ -191,8 +191,8 @@ claude-runner
 
 ```bash
 pm2 status                          # 查看状态
-pm2 logs claude-remote-broker       # 查看日志
-pm2 restart claude-remote-broker    # 重启服务
+pm2 logs cli-remote-broker       # 查看日志
+pm2 restart cli-remote-broker    # 重启服务
 pm2 monit                           # 监控
 ```
 
@@ -215,7 +215,7 @@ curl http://localhost:3000
 redis-cli -a your-password ping
 
 # 查看日志
-pm2 logs claude-remote-broker --lines 50
+pm2 logs cli-remote-broker --lines 50
 ```
 
 ## 🐛 故障排查
@@ -235,7 +235,7 @@ cat .env | grep REDIS
 ### Broker 启动失败
 ```bash
 # 查看详细日志
-pm2 logs claude-remote-broker --lines 100
+pm2 logs cli-remote-broker --lines 100
 
 # 检查端口占用
 sudo lsof -i :3000
