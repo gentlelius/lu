@@ -39,13 +39,14 @@ const getTerminalHTML = (fontSize: number = 14) => `
       height: 100%;
       overflow: hidden;
       background: #1a1a2e;
+      -webkit-text-size-adjust: 100%;
     }
     #terminal {
       width: 100%;
       height: 100%;
     }
     .xterm {
-      padding: 8px;
+      padding: 2px;
     }
     .xterm-viewport::-webkit-scrollbar {
       width: 8px;

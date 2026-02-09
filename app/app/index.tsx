@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { XTerminal, XTerminalRef } from '../src/components/XTerminal';
@@ -31,12 +32,14 @@ type ConnectionState =
 export default function TerminalScreen() {
   const router = useRouter();
   const appClient = getAppClient();
+  const { width } = useWindowDimensions();
   
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [pairingState, setPairingState] = useState<PairingState | null>(null);
   const [sessionId, setSessionId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [inputText, setInputText] = useState('');
+  const terminalFontSize = Platform.OS === 'web' ? 14 : (width < 380 ? 10 : 12);
   
   // 终端 ref
   const terminalRef = useRef<XTerminalRef>(null);
@@ -408,7 +411,7 @@ export default function TerminalScreen() {
             ref={terminalRef}
             onInput={handleTerminalInput}
             onResize={handleTerminalResize}
-            fontSize={14}
+            fontSize={terminalFontSize}
           />
 
           {/* 命令输入框 */}
