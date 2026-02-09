@@ -103,9 +103,17 @@ describe('RunnerClient', () => {
       const connectHandler = mockSocket.on.mock.calls.find(
         (call: any) => call[0] === 'connect'
       )[1];
+      const successHandler = mockSocket.on.mock.calls.find(
+        (call: any) => call[0] === 'runner:register:success'
+      )[1];
       connectHandler();
       
       const firstCode = mockSocket.emit.mock.calls[0][1].pairingCode;
+      successHandler({
+        runnerId: config.runnerId,
+        pairingCode: firstCode,
+        message: 'Success',
+      });
       
       // Clear emit calls
       mockSocket.emit.mockClear();
@@ -182,6 +190,35 @@ describe('RunnerClient', () => {
       );
       
       consoleErrorSpy.mockRestore();
+      jest.useRealTimers();
+    });
+
+    it('should not emit duplicate register when reconnect happens before scheduled retry', async () => {
+      jest.useFakeTimers();
+
+      await client.connect();
+
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call: any) => call[0] === 'connect'
+      )[1];
+      const errorHandler = mockSocket.on.mock.calls.find(
+        (call: any) => call[0] === 'runner:register:error'
+      )[1];
+
+      // First connect/register, then collision schedules retry.
+      connectHandler();
+      errorHandler({ error: 'DUPLICATE_CODE', message: 'Code already exists' });
+
+      mockSocket.emit.mockClear();
+
+      // Reconnect fires before timeout callback runs.
+      connectHandler();
+      expect(mockSocket.emit).toHaveBeenCalledTimes(1);
+
+      // Scheduled retry should be ignored because a registration is already in flight.
+      jest.advanceTimersByTime(1000);
+      expect(mockSocket.emit).toHaveBeenCalledTimes(1);
+
       jest.useRealTimers();
     });
   });

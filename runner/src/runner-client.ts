@@ -55,6 +55,8 @@ export class RunnerClient {
   private readonly maxRegistrationAttempts = 3;
   private connectionAttempts = 0;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private registrationRetryTimeout: NodeJS.Timeout | null = null;
+  private registrationInFlight = false;
   
   /** Heartbeat interval in milliseconds (10 seconds) */
   private readonly HEARTBEAT_INTERVAL_MS = 10000;
@@ -126,13 +128,15 @@ export class RunnerClient {
       
       this.isConnected = true;
       this.registrationAttempts = 0;
+      this.clearRegistrationRetryTimeout();
       
       // Register with pairing code
-      this.registerPairingCode();
+      this.tryRegisterPairingCode('connect');
     });
 
     // Registration successful
     this.socket.on('runner:register:success', (data: { runnerId: string; pairingCode: string; message: string }) => {
+      this.registrationInFlight = false;
       logger.info('Runner registered successfully', {
         runnerId: data.runnerId,
         pairingCode: this.pairingCode || undefined,
@@ -149,6 +153,7 @@ export class RunnerClient {
 
     // Registration failed
     this.socket.on('runner:register:error', (data: { error: string; message: string }) => {
+      this.registrationInFlight = false;
       logger.error('Registration failed', {
         runnerId: this.config.runnerId,
         errorCode: data.error,
@@ -171,6 +176,8 @@ export class RunnerClient {
       console.log(`❌ Disconnected from broker: ${reason}`);
       
       this.isConnected = false;
+      this.registrationInFlight = false;
+      this.clearRegistrationRetryTimeout();
       
       // Stop heartbeat
       this.stopHeartbeat();
@@ -205,6 +212,22 @@ export class RunnerClient {
     });
   }
 
+  private tryRegisterPairingCode(trigger: 'connect' | 'retry'): void {
+    if (!this.isConnected || !this.socket) {
+      return;
+    }
+
+    if (this.registrationInFlight) {
+      logger.debug('Skipping duplicate registration trigger', {
+        runnerId: this.config.runnerId,
+        trigger,
+      });
+      return;
+    }
+
+    this.registerPairingCode();
+  }
+
   /**
    * Generate and register a pairing code with the broker
    * 
@@ -237,6 +260,7 @@ export class RunnerClient {
     }
 
     // Send registration request to broker
+    this.registrationInFlight = true;
     this.socket?.emit('runner:register', {
       runnerId: this.config.runnerId,
       pairingCode: this.pairingCode,
@@ -269,10 +293,15 @@ export class RunnerClient {
         
         this.pairingCode = null; // Clear the old code
         this.registrationAttempts++;
+        this.registrationInFlight = false;
+        this.clearRegistrationRetryTimeout();
         
         if (this.registrationAttempts < this.maxRegistrationAttempts) {
           // Retry with a new code after a short delay
-          setTimeout(() => this.registerPairingCode(), 1000);
+          this.registrationRetryTimeout = setTimeout(() => {
+            this.registrationRetryTimeout = null;
+            this.tryRegisterPairingCode('retry');
+          }, 1000);
         } else {
           logger.error('Failed to register after maximum attempts', {
             runnerId: this.config.runnerId,
@@ -284,6 +313,7 @@ export class RunnerClient {
         break;
 
       case RunnerErrorCode.INVALID_SECRET:
+        this.registrationInFlight = false;
         // Fatal error - invalid configuration
         logger.error('Invalid runner secret - check configuration', {
           runnerId: this.config.runnerId,
@@ -294,6 +324,7 @@ export class RunnerClient {
         break;
 
       case RunnerErrorCode.INVALID_FORMAT:
+        this.registrationInFlight = false;
         // Should not happen - indicates a bug in code generation
         logger.error('Invalid pairing code format - this should not happen', {
           runnerId: this.config.runnerId,
@@ -304,6 +335,7 @@ export class RunnerClient {
         break;
 
       default:
+        this.registrationInFlight = false;
         // Unknown error
         logger.error('Unknown registration error', {
           runnerId: this.config.runnerId,
@@ -452,6 +484,13 @@ export class RunnerClient {
     }
   }
 
+  private clearRegistrationRetryTimeout(): void {
+    if (this.registrationRetryTimeout) {
+      clearTimeout(this.registrationRetryTimeout);
+      this.registrationRetryTimeout = null;
+    }
+  }
+
   /**
    * Send a heartbeat to the broker
    * 
@@ -486,6 +525,8 @@ export class RunnerClient {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
+    this.clearRegistrationRetryTimeout();
+    this.registrationInFlight = false;
     
     if (this.socket) {
       this.socket.disconnect();

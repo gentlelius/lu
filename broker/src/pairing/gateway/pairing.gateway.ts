@@ -123,6 +123,17 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
     this.logger.log(`Runner disconnected: ${runnerId}`);
     
     try {
+      // Ignore stale disconnect events from older sockets.
+      // Only the socket currently mapped to runnerId is allowed to clean up pairing state.
+      const currentSocket = this.runnerSockets.get(runnerId);
+      if (currentSocket && currentSocket.id !== socketId) {
+        this.logger.log(
+          `Ignoring stale disconnect for runner ${runnerId}: stale socket ${socketId}, current socket ${currentSocket.id}`,
+        );
+        this.socketToRunner.delete(socketId);
+        return;
+      }
+
       // Find and invalidate the pairing code
       const code = await this.pairingCodeService.findCodeByRunnerId(runnerId);
       if (code) {
@@ -233,6 +244,14 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       
       // Attempt to register the pairing code
       try {
+        // If this runner already has a different active code, invalidate it first.
+        // This avoids stale codes remaining valid when runner reconnects with a new code.
+        const existingCode = await this.pairingCodeService.findCodeByRunnerId(runnerId);
+        if (existingCode && existingCode !== pairingCode) {
+          await this.pairingCodeService.invalidateCode(existingCode);
+          this.logger.log(`Invalidated previous pairing code for runner ${runnerId}: ${existingCode}`);
+        }
+
         await this.pairingCodeService.registerCode(pairingCode, runnerId);
       } catch (error) {
         if (error.message === PairingErrorCode.DUPLICATE_CODE) {
@@ -252,6 +271,11 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       await this.pairingSessionService.updateHeartbeat(runnerId);
       
       // Store runner socket connection
+      const previousSocket = this.runnerSockets.get(runnerId);
+      if (previousSocket && previousSocket.id !== client.id) {
+        // Remove stale reverse mapping so its later disconnect can't invalidate new state.
+        this.socketToRunner.delete(previousSocket.id);
+      }
       this.runnerSockets.set(runnerId, client);
       this.socketToRunner.set(client.id, runnerId);
       

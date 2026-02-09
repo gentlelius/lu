@@ -111,6 +111,47 @@ describe('PairingGateway - Disconnect Handling', () => {
   });
 
   describe('Runner Disconnect', () => {
+    it('should ignore stale disconnect from previous runner socket', async () => {
+      // Arrange
+      const runnerId = 'test-runner-id';
+      const oldSocket = { id: 'old-runner-socket', emit: jest.fn() } as Partial<Socket>;
+      const newSocket = { id: 'new-runner-socket', emit: jest.fn() } as Partial<Socket>;
+
+      jest.spyOn(pairingCodeService, 'registerCode').mockResolvedValue(undefined);
+      jest.spyOn(pairingSessionService, 'updateHeartbeat').mockResolvedValue(undefined);
+
+      await gateway.handleRunnerRegister(oldSocket as Socket, {
+        runnerId,
+        pairingCode: 'ABC-123-XYZ',
+        secret: 'test-secret',
+      });
+
+      await gateway.handleRunnerRegister(newSocket as Socket, {
+        runnerId,
+        pairingCode: 'DEF-456-UVW',
+        secret: 'test-secret',
+      });
+
+      const findCodeSpy = jest.spyOn(pairingCodeService, 'findCodeByRunnerId').mockResolvedValue('DEF-456-UVW');
+      const invalidateSpy = jest.spyOn(pairingCodeService, 'invalidateCode').mockResolvedValue(undefined);
+      const removeSessionsSpy = jest.spyOn(pairingSessionService, 'removeAllSessionsForRunner').mockResolvedValue([]);
+      findCodeSpy.mockClear();
+      invalidateSpy.mockClear();
+      removeSessionsSpy.mockClear();
+
+      // Act: old socket disconnects after new socket already took ownership
+      gateway.handleDisconnect(oldSocket as Socket);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Assert: stale disconnect should not clean current runner state
+      expect(findCodeSpy).not.toHaveBeenCalled();
+      expect(invalidateSpy).not.toHaveBeenCalled();
+      expect(removeSessionsSpy).not.toHaveBeenCalled();
+      expect((gateway as any).runnerSockets.get(runnerId)?.id).toBe(newSocket.id);
+      expect((gateway as any).socketToRunner.has(oldSocket.id)).toBe(false);
+      expect((gateway as any).socketToRunner.get(newSocket.id)).toBe(runnerId);
+    });
+
     it('should invalidate pairing code when runner disconnects', async () => {
       // Arrange
       const runnerId = 'test-runner-id';
