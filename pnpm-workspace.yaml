@@ -1,4 +1,9 @@
 packages:
-  - "broker"
-  - "runner"
-  - "app"
+  - broker
+  - runner
+  - app
+
+ignoredBuiltDependencies:
+  - '@nestjs/core'
+  - node-pty
+  - unrs-resolver

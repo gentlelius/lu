@@ -186,71 +186,148 @@ const getTerminalHTML = (fontSize: number = 14) => `
 </html>
 `;
 
-// Web 平台实现 - 使用 iframe
+// Web 平台实现 - 直接使用 xterm.js
 const XTerminalWeb = forwardRef<XTerminalRef, XTerminalProps>(
-  ({ onInput, fontSize = 14 }, ref) => {
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-    const isReady = useRef(false);
-    const pendingWrites = useRef<string[]>([]);
-
-    // 发送消息到 iframe
-    const sendMessage = useCallback((type: string, data?: any) => {
-      if (iframeRef.current?.contentWindow && isReady.current) {
-        iframeRef.current.contentWindow.postMessage(
-          { source: 'react', type, data },
-          '*'
-        );
-      }
-    }, []);
+  ({ onInput, fontSize = 14, theme = 'dark' }, ref) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const terminalRef = useRef<any>(null);
+    const fitAddonRef = useRef<any>(null);
+    const isInitialized = useRef(false);
 
     useImperativeHandle(ref, () => ({
       write: (data: string) => {
-        if (isReady.current) {
-          sendMessage('write', data);
-        } else {
-          pendingWrites.current.push(data);
+        if (terminalRef.current) {
+          terminalRef.current.write(data);
         }
       },
-      clear: () => sendMessage('clear'),
-      focus: () => sendMessage('focus'),
-    }), [sendMessage]);
+      clear: () => {
+        if (terminalRef.current) {
+          terminalRef.current.clear();
+        }
+      },
+      focus: () => {
+        if (terminalRef.current) {
+          terminalRef.current.focus();
+        }
+      },
+    }), []);
 
     useEffect(() => {
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.source === 'xterm') {
-          switch (event.data.type) {
-            case 'ready':
-              isReady.current = true;
-              pendingWrites.current.forEach(data => sendMessage('write', data));
-              pendingWrites.current = [];
-              break;
-            case 'input':
-              onInput?.(event.data.data);
-              break;
-            case 'resize':
-              console.log(`📐 Terminal resized: ${event.data.cols}x${event.data.rows}`);
-              break;
-          }
+      // 动态导入并初始化终端
+      const initTerminal = async () => {
+        if (isInitialized.current || !containerRef.current) return;
+        
+        try {
+          // 动态导入 xterm.js 模块
+          const { Terminal } = await import('xterm');
+          const { FitAddon } = await import('xterm-addon-fit');
+          const { WebLinksAddon } = await import('xterm-addon-web-links');
+
+          isInitialized.current = true;
+
+          // xterm.js 主题配置
+          const xtermTheme = {
+            background: '#1a1a2e',
+            foreground: '#cdd6f4',
+            cursor: '#f5e0dc',
+            cursorAccent: '#1e1e2e',
+            selectionBackground: '#585b70',
+            selectionForeground: '#cdd6f4',
+            black: '#45475a',
+            red: '#f38ba8',
+            green: '#a6e3a1',
+            yellow: '#f9e2af',
+            blue: '#89b4fa',
+            magenta: '#f5c2e7',
+            cyan: '#94e2d5',
+            white: '#bac2de',
+            brightBlack: '#585b70',
+            brightRed: '#f38ba8',
+            brightGreen: '#a6e3a1',
+            brightYellow: '#f9e2af',
+            brightBlue: '#89b4fa',
+            brightMagenta: '#f5c2e7',
+            brightCyan: '#94e2d5',
+            brightWhite: '#a6adc8',
+          };
+
+          // 创建终端实例
+          const terminal = new Terminal({
+            fontSize,
+            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            theme: xtermTheme,
+            cursorBlink: true,
+            cursorStyle: 'bar',
+            allowTransparency: true,
+            scrollback: 5000,
+            convertEol: true,
+          });
+
+          terminalRef.current = terminal;
+
+          // 添加插件
+          const fitAddon = new FitAddon();
+          const webLinksAddon = new WebLinksAddon();
+          
+          fitAddonRef.current = fitAddon;
+          
+          terminal.loadAddon(fitAddon);
+          terminal.loadAddon(webLinksAddon);
+
+          // 打开终端
+          terminal.open(containerRef.current);
+          fitAddon.fit();
+
+          console.log('✅ XTerminal initialized (Web):', terminal.cols, 'x', terminal.rows);
+
+          // 监听用户输入
+          terminal.onData((data: string) => {
+            onInput?.(data);
+          });
+
+          // 监听窗口大小变化
+          const handleResize = () => {
+            if (fitAddonRef.current) {
+              fitAddonRef.current.fit();
+            }
+          };
+
+          window.addEventListener('resize', handleResize);
+
+          // 初始化后稍微延迟再 fit 一次，确保尺寸正确
+          setTimeout(() => {
+            if (fitAddonRef.current) {
+              fitAddonRef.current.fit();
+            }
+          }, 100);
+
+          return () => {
+            window.removeEventListener('resize', handleResize);
+            terminal.dispose();
+          };
+        } catch (error) {
+          console.error('❌ Failed to initialize XTerminal:', error);
         }
       };
 
-      window.addEventListener('message', handleMessage);
-      return () => window.removeEventListener('message', handleMessage);
-    }, [onInput, sendMessage]);
+      initTerminal();
 
-    const htmlContent = getTerminalHTML(fontSize);
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
+      return () => {
+        if (terminalRef.current) {
+          terminalRef.current.dispose();
+          terminalRef.current = null;
+        }
+        isInitialized.current = false;
+      };
+    }, [fontSize, onInput]);
 
     return (
       <View style={styles.container}>
-        <iframe
-          ref={iframeRef as any}
-          src={url}
+        <div
+          ref={containerRef as any}
           style={{
             width: '100%',
             height: '100%',
-            border: 'none',
             backgroundColor: '#1a1a2e',
           }}
         />
