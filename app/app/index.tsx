@@ -275,10 +275,18 @@ export default function TerminalScreen() {
 
   // 发送命令 - 从输入框
   const handleSendCommand = useCallback(() => {
-    if (inputText && sessionId) {
-      socketService.sendInput(sessionId, inputText + '\n');
-      setInputText('');
-    }
+    if (!inputText || !sessionId) return;
+
+    const currentSessionId = sessionId;
+    const command = inputText;
+
+    // 先发送文本，再单独发送回车，尽量模拟真实键入+Enter
+    socketService.sendInput(currentSessionId, command);
+    setTimeout(() => {
+      socketService.sendInput(currentSessionId, '\r');
+    }, 10);
+
+    setInputText('');
   }, [inputText, sessionId]);
 
   // 渲染状态指示器
