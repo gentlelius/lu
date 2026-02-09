@@ -322,13 +322,13 @@ export default function TerminalScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Claude Remote</Text>
+        <Text style={styles.title}>Cli Remote</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.pairingButton}
             onPress={() => router.push('/pairing')}
           >
-            <Text style={styles.pairingButtonText}>配对</Text>
+            <Text style={styles.pairingButtonText}>Pair</Text>
           </TouchableOpacity>
           {renderStatusBadge()}
         </View>
@@ -437,7 +437,7 @@ export default function TerminalScreen() {
               returnKeyType="send"
             />
             <TouchableOpacity style={styles.sendButton} onPress={handleSendCommand}>
-              <Text style={styles.sendButtonText}>发送</Text>
+              <Text style={styles.sendButtonText}>Send</Text>
             </TouchableOpacity>
           </View>
 

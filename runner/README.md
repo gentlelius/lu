@@ -1,6 +1,6 @@
-# Claude Remote Runner
+# Cli Remote Runner
 
-Remote terminal runner for Claude Remote project. This package allows you to run a terminal session that connects to a remote broker server.
+Remote terminal runner for Cli Remote project. This package allows you to run a terminal session that connects to a remote broker server.
 
 ## Installation
 

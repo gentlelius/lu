@@ -310,7 +310,7 @@ node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
 
 set -e
 
-echo "🚀 启动 Claude Remote Broker..."
+echo "🚀 启动 Cli Remote Broker..."
 
 # 检查 Node.js
 if ! command -v node &> /dev/null; then

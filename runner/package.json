@@ -1,7 +1,7 @@
 {
   "name": "claude-remote-runner",
   "version": "1.0.0",
-  "description": "Remote terminal runner for Claude Remote project",
+  "description": "Remote terminal runner for Cli Remote project",
   "main": "dist/index.js",
   "bin": {
     "claude-runner": "dist/cli.js"

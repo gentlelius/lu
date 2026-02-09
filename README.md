@@ -1,4 +1,4 @@
-# Claude Remote
+# Cli Remote
 
 远程终端执行系统，支持通过配对码安全连接 Runner 和 App。
 

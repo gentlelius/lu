@@ -1,4 +1,4 @@
-# Claude Remote 系统流程图
+# Cli Remote 系统流程图
 
 ## 系统架构概览
 

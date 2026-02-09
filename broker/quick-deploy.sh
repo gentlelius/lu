@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Claude Remote Broker 一键部署脚本
+# Cli Remote Broker 一键部署脚本
 # 用法: ./quick-deploy.sh
 
 set -e
 
-echo "🚀 Claude Remote Broker 一键部署脚本"
+echo "🚀 Cli Remote Broker 一键部署脚本"
 echo "======================================"
 echo ""
 

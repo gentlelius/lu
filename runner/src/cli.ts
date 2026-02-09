@@ -41,7 +41,7 @@ if (flags.secret) process.env.RUNNER_SECRET = flags.secret;
 // 显示帮助信息
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`
-Claude Remote Runner CLI
+Cli Remote Runner CLI
 
 Usage:
   claude-runner [options]
@@ -70,7 +70,7 @@ Example:
 const config = loadConfig();
 const client = new SocketClient(config);
 
-console.log('🚀 Starting Claude Remote Runner...');
+console.log('🚀 Starting Cli Remote Runner...');
 console.log(`   Runner ID: ${config.runnerId}`);
 console.log(`   Broker URL: ${config.brokerUrl}`);
 console.log('');
