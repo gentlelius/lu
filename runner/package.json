@@ -2,18 +2,26 @@
   "name": "cli-remote-runner",
   "version": "1.0.0",
   "description": "Remote terminal runner for Cli Remote project",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
-    "claude-runner": "dist/cli.js"
+    "claude-runner": "./dist/cli.js"
   },
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "ts-node src/index.ts",
-    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "dev": "ts-node src/main.ts",
+    "start": "node dist/main.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

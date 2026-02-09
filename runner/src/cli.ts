@@ -3,8 +3,7 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
-import { loadConfig } from './config';
-import { SocketClient } from './socket-client';
+import { createRunner } from './runner';
 
 // 加载环境变量
 // 优先级: 当前目录 .env > 用户目录 .env
@@ -67,25 +66,19 @@ Example:
   process.exit(0);
 }
 
-const config = loadConfig();
-const client = new SocketClient(config);
+const runner = createRunner();
 
-console.log('🚀 Starting Cli Remote Runner...');
-console.log(`   Runner ID: ${config.runnerId}`);
-console.log(`   Broker URL: ${config.brokerUrl}`);
-console.log('');
-
-client.connect();
+runner.start();
 
 // 优雅退出
 process.on('SIGINT', () => {
   console.log('\n👋 Shutting down...');
-  client.disconnect();
+  runner.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n👋 Shutting down...');
-  client.disconnect();
+  runner.stop();
   process.exit(0);
 });

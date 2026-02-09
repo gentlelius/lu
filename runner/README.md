@@ -1,6 +1,8 @@
 # Cli Remote Runner
 
-Remote terminal runner for Cli Remote project. This package allows you to run a terminal session that connects to a remote broker server.
+Remote terminal runner for Cli Remote project. This package provides:
+- A CLI (`claude-runner`)
+- A programmatic npm API (`Runner`, `createRunner`, clients/utilities)
 
 ## Installation
 
@@ -22,6 +24,20 @@ npm install cli-remote-runner
 
 ```bash
 claude-runner --url https://your-broker.com --id my-runner --secret your-secret
+```
+
+### Programmatic Usage
+
+```ts
+import { createRunner } from 'cli-remote-runner';
+
+const runner = createRunner();
+runner.start();
+
+process.on('SIGINT', () => {
+  runner.stop();
+  process.exit(0);
+});
 ```
 
 ### Command Line Options
@@ -96,6 +112,14 @@ claude-runner --url https://another-broker.com --id another-runner
 
 - Node.js >= 16.0.0
 - A running broker server
+
+## Exports
+
+Package root exports:
+- `Runner`, `createRunner`
+- `loadConfig`, `SocketClient`, `RunnerClient`
+- `PtyManager`, `PairingCodeGenerator`
+- `logger`, `Logger`, `LogLevel`
 
 ## License
 
