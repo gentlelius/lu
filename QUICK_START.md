@@ -20,7 +20,7 @@ pnpm build
 npm link
 
 # 运行
-claude-runner --url http://localhost:3000 --id test-runner --secret secret-runner-1
+runner --url http://localhost:3000 --id test-runner --secret secret-runner-1
 ```
 
 ---
@@ -80,10 +80,10 @@ npm install -g cli-remote-runner
 # 配置
 echo "BROKER_URL=http://your-ecs-ip:3000
 RUNNER_ID=my-laptop
-RUNNER_SECRET=my-secret" > ~/.claude-runner.env
+RUNNER_SECRET=my-secret" > ~/.runner.env
 
 # 运行
-claude-runner
+runner
 ```
 
 ---
@@ -113,13 +113,13 @@ pm2 monit
 
 ```bash
 # 查看帮助
-claude-runner --help
+runner --help
 
 # 使用配置文件
-claude-runner
+runner
 
 # 使用命令行参数
-claude-runner --url http://broker.com:3000 --id my-runner --secret my-secret
+runner --url http://broker.com:3000 --id my-runner --secret my-secret
 ```
 
 ---

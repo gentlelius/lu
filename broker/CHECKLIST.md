@@ -107,7 +107,7 @@ curl http://your-ecs-ip:3000
 cd runner
 npm run build
 npm link
-claude-runner --help
+runner --help
 ```
 
 ### 2. 发布到 npm
@@ -125,10 +125,10 @@ npm install -g cli-remote-runner
 # 配置
 echo "BROKER_URL=http://your-ecs-ip:3000
 RUNNER_ID=my-laptop
-RUNNER_SECRET=your-secret" > ~/.claude-runner.env
+RUNNER_SECRET=your-secret" > ~/.runner.env
 
 # 运行
-claude-runner
+runner
 ```
 
 ---
@@ -160,7 +160,7 @@ curl http://your-ecs-ip:3000
 ### Runner 连接测试
 
 ```bash
-claude-runner --url http://your-ecs-ip:3000 --id test --secret secret-runner-1
+runner --url http://your-ecs-ip:3000 --id test --secret secret-runner-1
 ```
 
 ---

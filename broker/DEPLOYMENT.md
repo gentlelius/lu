@@ -163,8 +163,8 @@ npm link
 测试命令：
 
 ```bash
-claude-runner --help
-claude-runner --url http://your-ecs-ip:3000 --id test-runner --secret test-secret
+runner --help
+runner --url http://your-ecs-ip:3000 --id test-runner --secret test-secret
 ```
 
 #### 1.2 发布到 npm
@@ -195,7 +195,7 @@ npm install -g cli-remote-runner
 
 #### 2.2 配置
 
-创建 `~/.claude-runner.env`:
+创建 `~/.runner.env`:
 
 ```env
 BROKER_URL=http://your-ecs-ip:3000
@@ -206,13 +206,13 @@ RUNNER_SECRET=my-secure-secret
 #### 2.3 运行
 
 ```bash
-claude-runner
+runner
 ```
 
 或使用命令行参数：
 
 ```bash
-claude-runner --url http://your-ecs-ip:3000 --id my-laptop --secret my-secure-secret
+runner --url http://your-ecs-ip:3000 --id my-laptop --secret my-secure-secret
 ```
 
 ---

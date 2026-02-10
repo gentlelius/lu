@@ -140,7 +140,7 @@ redis-cli -a your-redis-password ping
 在另一台机器上启动 runner：
 ```bash
 npm install -g cli-remote-runner
-claude-runner --url http://your-server-ip:3000 --id test-runner --secret test-secret
+runner --url http://your-server-ip:3000 --id test-runner --secret test-secret
 ```
 
 应该看到配对码显示。

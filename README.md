@@ -66,7 +66,7 @@ cd runner
 npm install
 npm run build
 npm link
-claude-runner --url http://localhost:3000 --id test --secret secret-runner-1
+runner --url http://localhost:3000 --id test --secret secret-runner-1
 ```
 
 ## 📚 文档
@@ -173,7 +173,7 @@ CORS_ORIGINS=*
 
 ```bash
 # 命令行参数
-claude-runner \
+runner \
   --url http://your-server:3000 \
   --id runner-1 \
   --secret secret-runner-1
@@ -182,7 +182,7 @@ claude-runner \
 export BROKER_URL=http://your-server:3000
 export RUNNER_ID=runner-1
 export RUNNER_SECRET=secret-runner-1
-claude-runner
+runner
 ```
 
 ## 🛠️ 运维命令

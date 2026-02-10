@@ -8,7 +8,7 @@ import { createRunner } from './runner';
 // 加载环境变量
 // 优先级: 当前目录 .env > 用户目录 .env
 const localEnv = path.join(process.cwd(), '.env');
-const homeEnv = path.join(process.env.HOME || process.env.USERPROFILE || '', '.claude-runner.env');
+const homeEnv = path.join(process.env.HOME || process.env.USERPROFILE || '', '.runner.env');
 
 if (fs.existsSync(localEnv)) {
   dotenv.config({ path: localEnv });
@@ -43,7 +43,7 @@ if (args.includes('--help') || args.includes('-h')) {
 Cli Remote Runner CLI
 
 Usage:
-  claude-runner [options]
+  runner [options]
 
 Options:
   --url <url>        Broker server URL (default: http://115.191.40.55:3000)
@@ -58,10 +58,10 @@ Environment Variables:
 
 Configuration Files (priority order):
   1. .env in current directory
-  2. .claude-runner.env in home directory
+  2. .runner.env in home directory
 
 Example:
-  claude-runner --url https://broker.example.com --id my-runner --secret my-secret
+  runner --url https://broker.example.com --id my-runner --secret my-secret
   `);
   process.exit(0);
 }

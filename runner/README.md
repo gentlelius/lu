@@ -1,7 +1,7 @@
 # Cli Remote Runner
 
 Remote terminal runner for Cli Remote project. This package provides:
-- A CLI (`claude-runner`)
+- A CLI (`runner`)
 - A programmatic npm API (`Runner`, `createRunner`, clients/utilities)
 
 ## Installation
@@ -23,7 +23,7 @@ npm install cli-remote-runner
 ### Quick Start
 
 ```bash
-claude-runner --url https://your-broker.com --id my-runner --secret your-secret
+runner --url https://your-broker.com --id my-runner --secret your-secret
 ```
 
 ### Programmatic Usage
@@ -43,7 +43,7 @@ process.on('SIGINT', () => {
 ### Command Line Options
 
 ```bash
-claude-runner [options]
+runner [options]
 
 Options:
   --url <url>        Broker server URL (default: http://localhost:3000)
@@ -62,7 +62,7 @@ You can configure the runner using:
 
 #### Environment Variables
 
-Create a `.env` file in your project directory or `.claude-runner.env` in your home directory:
+Create a `.env` file in your project directory or `.runner.env` in your home directory:
 
 ```env
 BROKER_URL=https://your-broker.com
@@ -73,7 +73,7 @@ RUNNER_SECRET=your-secret
 #### Configuration File Priority
 
 1. `.env` in current directory
-2. `.claude-runner.env` in home directory
+2. `.runner.env` in home directory
 
 ### Examples
 
@@ -83,12 +83,12 @@ RUNNER_SECRET=your-secret
 export BROKER_URL=https://broker.example.com
 export RUNNER_ID=my-runner
 export RUNNER_SECRET=my-secret
-claude-runner
+runner
 ```
 
 #### Using configuration file
 
-Create `.claude-runner.env` in your home directory:
+Create `.runner.env` in your home directory:
 
 ```env
 BROKER_URL=https://broker.example.com
@@ -99,13 +99,13 @@ RUNNER_SECRET=my-secret
 Then simply run:
 
 ```bash
-claude-runner
+runner
 ```
 
 #### Override with command line
 
 ```bash
-claude-runner --url https://another-broker.com --id another-runner
+runner --url https://another-broker.com --id another-runner
 ```
 
 ## Requirements
