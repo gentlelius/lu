@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
   // CORS 配置
   const corsOrigins = process.env.CORS_ORIGINS || '*';
@@ -13,6 +15,22 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // 提供静态文件服务 (app web 版)
+  const webAppPath = join(__dirname, '..', '..', 'app', 'dist');
+  app.useStaticAssets(webAppPath, {
+    prefix: '/',
+    index: 'index.html',
+  });
+
+  // 所有非 API 路由都返回 index.html (支持 SPA 路由)
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/socket.io') && !req.path.startsWith('/api')) {
+      res.sendFile(join(webAppPath, 'index.html'));
+    } else {
+      next();
+    }
+  });
+
   const port = process.env.PORT || 3000;
   const host = '0.0.0.0'; // 监听所有网络接口
   
@@ -21,6 +39,7 @@ async function bootstrap() {
   console.log(`🚀 Broker running on http://localhost:${port}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   CORS Origins: ${corsOrigins}`);
+  console.log(`   Web App: ${webAppPath}`);
 }
 
 bootstrap();

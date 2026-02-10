@@ -8,7 +8,7 @@
 .
 ├── broker/          # 中心服务器（NestJS + Socket.IO + Redis）
 ├── runner/          # CLI 工具（Node.js + node-pty）
-├── app/             # 移动端应用（React Native + Expo）
+├── app/             # 移动端/Web 应用（React Native + Expo）
 └── docs/            # 完整文档
 ```
 
@@ -16,14 +16,30 @@
 
 - 🔐 **安全配对系统** - 使用配对码进行安全连接
 - 🔄 **实时终端** - WebSocket 实时通信
-- 📱 **移动端支持** - React Native App
+- 📱 **多平台支持** - iOS、Android、Web 全平台
+- 🌐 **Web 版部署** - 可直接部署到 Broker 服务器
 - 🔒 **JWT 认证** - 安全的身份验证
 - 💾 **Redis 存储** - 配对关系和会话管理
 - 🚀 **PM2 管理** - 生产级进程管理
 
 ## 🚀 快速开始
 
-### 方式 1：一键部署（推荐）
+### 方式 1：Web 版一键部署（推荐）
+
+```bash
+# 部署 Broker + Web App
+cd broker
+./deploy-web.sh
+
+# 启动服务
+npm run pm2:start
+
+# 访问 http://localhost:3000
+```
+
+自动完成：构建 Web App、构建 Broker、重启服务
+
+### 方式 2：服务器一键部署
 
 ```bash
 # 在服务器上执行
@@ -33,7 +49,7 @@ cd broker
 
 自动完成：Redis 安装、配置、构建、启动
 
-### 方式 2：分步部署
+### 方式 3：分步部署
 
 ```bash
 # 1. 配置 Redis
@@ -50,7 +66,7 @@ npm run build
 pm2 start ecosystem.config.js
 ```
 
-### 方式 3：本地开发
+### 方式 4：本地开发
 
 ```bash
 # 1. 启动 Redis
@@ -72,9 +88,12 @@ runner --url http://localhost:3000 --id test --secret secret-runner-1
 ## 📚 文档
 
 ### 部署文档
-- 📖 [快速部署指南](./docs/QUICK_START_DEPLOYMENT.md) - 5 分钟快速部署
+- 🌐 [Web 版快速开始](./docs/WEB_QUICK_START.md) - 5 分钟部署 Web 版
+- 🌐 [Web 版部署指南](./docs/WEB_DEPLOYMENT.md) - 完整的 Web 部署文档
+- 📖 [快速部署指南](./docs/QUICK_START_DEPLOYMENT.md) - 服务器快速部署
 - 📖 [完整部署指南](./docs/DEPLOYMENT_GUIDE.md) - 详细的部署和配置说明
-- 📖 [部署总结](./docs/DEPLOYMENT_SUMMARY.md) - 三种部署方式对比
+- 📖 [部署总结](./docs/DEPLOYMENT_SUMMARY.md) - 多种部署方式对比
+- 🔧 [Nginx 配置示例](./docs/nginx-config-example.conf) - 生产环境 Nginx 配置
 
 ### 安全文档
 - 🔒 [安全修复说明](./docs/SECURITY_FIX_COMPLETED.md) - 配对验证安全修复
@@ -128,11 +147,12 @@ runner --url http://localhost:3000 --id test --secret secret-runner-1
 - **通信**: Socket.IO Client
 - **配对**: 自动生成配对码
 
-### App (移动端)
+### App (移动端/Web)
 - **框架**: React Native + Expo
+- **平台**: iOS、Android、Web
 - **终端**: xterm.js
 - **通信**: Socket.IO Client
-- **UI**: React Native Paper
+- **部署**: 可构建为静态文件部署到 Broker
 
 ## 🔒 安全特性
 
