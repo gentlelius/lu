@@ -16,7 +16,8 @@ async function bootstrap() {
   });
 
   // 提供静态文件服务 (app web 版)
-  const webAppPath = join(__dirname, '..', '..', 'app', 'dist');
+  // 静态资源随 broker 一起部署在 broker/app/dist
+  const webAppPath = join(__dirname, '..', 'app', 'dist');
   app.useStaticAssets(webAppPath, {
     prefix: '/',
     index: 'index.html',
