@@ -1,10 +1,12 @@
 import { io, Socket } from 'socket.io-client';
 import { Config } from './config';
 import { PtyManager } from './pty-manager';
+import { HistoryReader } from './history-reader';
 
 export class SocketClient {
   private socket: Socket | null = null;
   private ptyManager = new PtyManager();
+  private historyReader = new HistoryReader();
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 10;
 
@@ -86,6 +88,59 @@ export class SocketClient {
     this.socket.on('terminal_resize', (data: { sessionId: string; cols: number; rows: number }) => {
       this.ptyManager.resize(data.sessionId, data.cols, data.rows);
     });
+
+    // ─── 历史记录 ──────────────────────────────────────────────
+
+    // App 请求会话列表
+    this.socket.on(
+      'history:list',
+      async (data: { requestId: string; projectPath?: string }) => {
+        console.log(`📚 history:list requested (requestId=${data.requestId})`);
+        try {
+          const sessions = await this.historyReader.listSessions(data.projectPath);
+          this.socket?.emit('history:list:result', {
+            requestId: data.requestId,
+            sessions,
+            error: null,
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`❌ history:list error: ${message}`);
+          this.socket?.emit('history:list:result', {
+            requestId: data.requestId,
+            sessions: [],
+            error: message,
+          });
+        }
+      },
+    );
+
+    // App 请求单个会话详情
+    this.socket.on(
+      'history:get',
+      async (data: { requestId: string; sessionId: string; projectPath?: string }) => {
+        console.log(`📖 history:get requested (sessionId=${data.sessionId})`);
+        try {
+          const session = await this.historyReader.getSession(
+            data.sessionId,
+            data.projectPath,
+          );
+          this.socket?.emit('history:get:result', {
+            requestId: data.requestId,
+            session,
+            error: session ? null : 'Session not found',
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`❌ history:get error: ${message}`);
+          this.socket?.emit('history:get:result', {
+            requestId: data.requestId,
+            session: null,
+            error: message,
+          });
+        }
+      },
+    );
   }
 
   disconnect(): void {

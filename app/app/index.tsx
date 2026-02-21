@@ -16,7 +16,9 @@ import {
 import { useRouter } from 'expo-router';
 import { XTerminal, XTerminalRef } from '../src/components/XTerminal';
 import { QuickKeyboard } from '../src/components/QuickKeyboard';
+import { HistoryPanel } from '../src/components/HistoryPanel';
 import { socketService } from '../src/services/socket';
+import { setHistorySocket } from '../src/services/history';
 import { PairingState } from '../src/services/app-client';
 import { getAppClient } from '../src/services/app-client-singleton';
 
@@ -183,6 +185,7 @@ export default function TerminalScreen() {
         const socket = appClient.getSocket();
         if (socket) {
           socketService.setSocket(socket);
+          setHistorySocket(socket);
         }
         
         const status = await appClient.getPairingStatus();
@@ -218,6 +221,8 @@ export default function TerminalScreen() {
       const socket = appClient.getSocket();
       if (socket) {
         socketService.setSocket(socket);
+        // 历史记录 service 共享同一个 socket
+        setHistorySocket(socket);
       }
       
       // 检查配对状态
@@ -426,6 +431,14 @@ export default function TerminalScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Cli Remote</Text>
         <View style={styles.headerRight}>
+          {/* 历史记录面板 — 已配对或会话激活时可用 */}
+          {(connectionState === 'paired' || connectionState === 'session_active') && (
+            <HistoryPanel
+              onSelectMessage={(text) => {
+                setInputText(text);
+              }}
+            />
+          )}
           <TouchableOpacity
             style={styles.pairingButton}
             onPress={() => router.push('/pairing')}

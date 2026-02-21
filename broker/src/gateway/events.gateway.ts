@@ -276,5 +276,134 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('session_resumed', { sessionId: payload.sessionId, active: false });
     }
   }
+
+  // ─── 历史记录转发 ────────────────────────────────────────────
+
+  /**
+   * App 请求历史会话列表
+   * App -> Broker -> Runner (history:list)
+   * Runner -> Broker (history:list:result) -> App
+   */
+  @SubscribeMessage('history:list')
+  async handleHistoryList(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { requestId: string; projectPath?: string },
+  ) {
+    const clientToken = this.getClientToken(client);
+    const pairingSession = await this.pairingSessionService.getSession(clientToken);
+    if (!pairingSession) {
+      client.emit('history:list:result', {
+        requestId: payload.requestId,
+        sessions: [],
+        error: 'Not paired with any runner',
+      });
+      return;
+    }
+
+    const runner = this.runnerService.getRunner(pairingSession.runnerId);
+    if (!runner) {
+      client.emit('history:list:result', {
+        requestId: payload.requestId,
+        sessions: [],
+        error: 'Runner is offline',
+      });
+      return;
+    }
+
+    // 将 App 的 socket.id 附加到 requestId 中，方便回传时路由到此 App
+    const routedRequestId = `${client.id}::${payload.requestId}`;
+    console.log(`📚 Broker: forwarding history:list to runner ${pairingSession.runnerId}`);
+    runner.socket.emit('history:list', {
+      requestId: routedRequestId,
+      projectPath: payload.projectPath,
+    });
+  }
+
+  /**
+   * App 请求单个历史会话详情
+   * App -> Broker -> Runner (history:get)
+   * Runner -> Broker (history:get:result) -> App
+   */
+  @SubscribeMessage('history:get')
+  async handleHistoryGet(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { requestId: string; sessionId: string; projectPath?: string },
+  ) {
+    const clientToken = this.getClientToken(client);
+    const pairingSession = await this.pairingSessionService.getSession(clientToken);
+    if (!pairingSession) {
+      client.emit('history:get:result', {
+        requestId: payload.requestId,
+        session: null,
+        error: 'Not paired with any runner',
+      });
+      return;
+    }
+
+    const runner = this.runnerService.getRunner(pairingSession.runnerId);
+    if (!runner) {
+      client.emit('history:get:result', {
+        requestId: payload.requestId,
+        session: null,
+        error: 'Runner is offline',
+      });
+      return;
+    }
+
+    const routedRequestId = `${client.id}::${payload.requestId}`;
+    console.log(`📖 Broker: forwarding history:get to runner ${pairingSession.runnerId}`);
+    runner.socket.emit('history:get', {
+      requestId: routedRequestId,
+      sessionId: payload.sessionId,
+      projectPath: payload.projectPath,
+    });
+  }
+
+  /**
+   * Runner 返回历史会话列表结果 -> Broker -> App
+   */
+  @SubscribeMessage('history:list:result')
+  handleHistoryListResult(
+    @ConnectedSocket() _client: Socket,
+    @MessageBody() payload: { requestId: string; sessions: unknown[]; error: string | null },
+  ) {
+    // requestId 格式为 "appSocketId::originalRequestId"
+    const [appSocketId, ...rest] = payload.requestId.split('::');
+    const originalRequestId = rest.join('::');
+    const appSocket = this.server.sockets.sockets.get(appSocketId);
+    if (!appSocket) {
+      console.warn(`⚠️ Broker: App socket ${appSocketId} not found for history:list:result`);
+      return;
+    }
+    console.log(`📚 Broker: forwarding history:list:result to app socket ${appSocketId}`);
+    appSocket.emit('history:list:result', {
+      requestId: originalRequestId,
+      sessions: payload.sessions,
+      error: payload.error,
+    });
+  }
+
+  /**
+   * Runner 返回历史会话详情结果 -> Broker -> App
+   */
+  @SubscribeMessage('history:get:result')
+  handleHistoryGetResult(
+    @ConnectedSocket() _client: Socket,
+    @MessageBody() payload: { requestId: string; session: unknown; error: string | null },
+  ) {
+    const [appSocketId, ...rest] = payload.requestId.split('::');
+    const originalRequestId = rest.join('::');
+    const appSocket = this.server.sockets.sockets.get(appSocketId);
+    if (!appSocket) {
+      console.warn(`⚠️ Broker: App socket ${appSocketId} not found for history:get:result`);
+      return;
+    }
+    console.log(`📖 Broker: forwarding history:get:result to app socket ${appSocketId}`);
+    appSocket.emit('history:get:result', {
+      requestId: originalRequestId,
+      session: payload.session,
+      error: payload.error,
+    });
+  }
 }
 
