@@ -39,6 +39,12 @@ export default function TerminalScreen() {
   const [sessionId, setSessionId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [inputText, setInputText] = useState('');
+  // 历史消息
+  const [inputHistory, setInputHistory] = useState<string[]>([]);
+  // 当前浏览的历史索引，-1 表示未浏览历史（显示当前草稿）
+  const historyIndexRef = useRef(-1);
+  // 保存在导航历史前输入的草稿
+  const draftRef = useRef('');
   const terminalFontSize = Platform.OS === 'web' ? 14 : (width < 380 ? 10 : 12);
   
   // 终端 ref
@@ -286,8 +292,57 @@ export default function TerminalScreen() {
       socketService.sendInput(currentSessionId, '\r');
     }, 10);
 
+    // 保存到历史记录（去重：如果和最近一条相同则不重复添加）
+    setInputHistory(prev => {
+      if (prev.length > 0 && prev[prev.length - 1] === command) return prev;
+      return [...prev, command];
+    });
+    // 重置历史浏览索引和草稿
+    historyIndexRef.current = -1;
+    draftRef.current = '';
     setInputText('');
   }, [inputText, sessionId]);
+
+  // 处理上下键浏览历史
+  const handleHistoryKeyPress = useCallback(
+    (e: { nativeEvent: { key: string } }) => {
+      const key = e.nativeEvent.key;
+      if (key !== 'ArrowUp' && key !== 'ArrowDown') return;
+
+      setInputHistory(currentHistory => {
+        if (currentHistory.length === 0) return currentHistory;
+
+        setInputText(currentText => {
+          let idx = historyIndexRef.current;
+
+          if (key === 'ArrowUp') {
+            // 第一次按上键：保存草稿
+            if (idx === -1) {
+              draftRef.current = currentText;
+            }
+            idx = idx === -1
+              ? currentHistory.length - 1
+              : Math.max(0, idx - 1);
+          } else {
+            // ArrowDown
+            if (idx === -1) return currentText;
+            idx = idx + 1;
+            if (idx >= currentHistory.length) {
+              // 回到草稿
+              historyIndexRef.current = -1;
+              return draftRef.current;
+            }
+          }
+
+          historyIndexRef.current = idx;
+          return currentHistory[idx];
+        });
+
+        return currentHistory;
+      });
+    },
+    []
+  );
 
   // 渲染状态指示器
   const renderStatusBadge = () => {
@@ -427,9 +482,17 @@ export default function TerminalScreen() {
             <TextInput
               style={styles.input}
               value={inputText}
-              onChangeText={setInputText}
+              onChangeText={text => {
+                // 手动输入时重置历史索引并更新草稿
+                if (historyIndexRef.current === -1) {
+                  draftRef.current = text;
+                }
+                historyIndexRef.current = -1;
+                setInputText(text);
+              }}
               onSubmitEditing={handleSendCommand}
-              placeholder="输入命令..."
+              onKeyPress={handleHistoryKeyPress}
+              placeholder="输入命令... (↑↓ 浏览历史)"
               placeholderTextColor="#6c7086"
               autoCapitalize="none"
               autoCorrect={false}
