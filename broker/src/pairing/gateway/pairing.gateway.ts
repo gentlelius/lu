@@ -75,8 +75,17 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
    * Called when any client (runner or app) connects to the WebSocket server.
    * Logs the connection for monitoring purposes.
    */
+  /**
+   * Extract stable client token from socket handshake.
+   * Falls back to socket.id if no token provided (legacy / runner).
+   */
+  private getClientToken(client: Socket): string {
+    return (client.handshake.auth?.clientToken as string) || client.id;
+  }
+
   handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
+    const clientToken = this.getClientToken(client);
+    this.logger.log(`Client connected: ${client.id} (token: ${clientToken})`);
   }
 
   /**
@@ -99,10 +108,11 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       return;
     }
     
-    // Check if this is an app
-    const appSessionId = this.socketToApp.get(client.id);
+    // Check if this is an app — use clientToken as the stable session key
+    const clientToken = this.getClientToken(client);
+    const appSessionId = this.socketToApp.get(clientToken);
     if (appSessionId) {
-      this.handleAppDisconnect(appSessionId, client.id);
+      this.handleAppDisconnect(appSessionId, clientToken);
       return;
     }
   }
@@ -180,11 +190,12 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
    * 
    * Requirements: 4.4
    */
-  private handleAppDisconnect(appSessionId: string, socketId: string) {
+  private handleAppDisconnect(appSessionId: string, clientToken: string) {
     this.logger.log(`App disconnected: ${appSessionId} (preserving pairing relationship)`);
     
-    // Clean up internal mappings (but keep the pairing session in Redis)
-    this.socketToApp.delete(socketId);
+    // Do NOT delete socketToApp here — the clientToken may reconnect shortly.
+    // The mapping is updated (or cleared) when the same clientToken reconnects/pairs again.
+    // This preserves the pairing relationship across page refreshes.
   }
 
   /**
@@ -349,7 +360,8 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @MessageBody() payload: { pairingCode: string },
   ) {
     const { pairingCode } = payload;
-    const appSessionId = client.id; // Use socket ID as session ID
+    // Use stable clientToken as session ID so reconnections are recognized
+    const appSessionId = this.getClientToken(client);
     
     this.logger.log(`App pairing request: ${appSessionId}, code: ${pairingCode}`);
     
@@ -462,8 +474,8 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       // Increment usage count for the pairing code
       await this.pairingCodeService.incrementUsageCount(pairingCode);
       
-      // Store app socket mapping
-      this.socketToApp.set(client.id, appSessionId);
+      // Store app socket mapping keyed by stable clientToken
+      this.socketToApp.set(appSessionId, appSessionId);
       
       // 6. Record successful pairing in history
       await this.pairingHistoryService.record({
@@ -520,7 +532,7 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
    */
   @SubscribeMessage('app:pairing:status')
   async handlePairingStatus(@ConnectedSocket() client: Socket) {
-    const appSessionId = client.id;
+    const appSessionId = this.getClientToken(client);
     
     this.logger.log(`App pairing status query: ${appSessionId}`);
     
@@ -578,7 +590,7 @@ export class PairingGateway implements OnGatewayConnection, OnGatewayDisconnect 
    */
   @SubscribeMessage('app:unpair')
   async handleUnpair(@ConnectedSocket() client: Socket) {
-    const appSessionId = client.id;
+    const appSessionId = this.getClientToken(client);
     
     this.logger.log(`App unpair request: ${appSessionId}`);
     

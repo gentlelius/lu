@@ -20,6 +20,9 @@ import { socketService } from '../src/services/socket';
 import { PairingState } from '../src/services/app-client';
 import { getAppClient } from '../src/services/app-client-singleton';
 
+/** localStorage key for persisting active session across page refreshes */
+const ACTIVE_SESSION_KEY = 'lu_active_session_id';
+
 type ConnectionState = 
   | 'disconnected' 
   | 'connecting' 
@@ -73,12 +76,32 @@ export default function TerminalScreen() {
       isStartingSession.current = false;
       setSessionId(data.sessionId);
       setConnectionState('session_active');
+      // Persist session ID so we can recover it after a page refresh
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(ACTIVE_SESSION_KEY, data.sessionId);
+      }
       socketService.resize(
         data.sessionId,
         terminalSizeRef.current.cols,
         terminalSizeRef.current.rows
       );
       terminalRef.current?.write('\r\n--- Session started ---\r\n');
+    };
+
+    // Handle session resume confirmation from broker (after page refresh)
+    const handleSessionResumed = (data: { sessionId: string; active: boolean }) => {
+      console.log('🔁 Session resume response:', data);
+      if (data.active) {
+        activeSessionRef.current = data.sessionId;
+        setSessionId(data.sessionId);
+        setConnectionState('session_active');
+        terminalRef.current?.write('\r\n--- Session resumed ---\r\n');
+      } else {
+        // Session no longer exists on broker/runner side; clear stored ID
+        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.removeItem(ACTIVE_SESSION_KEY);
+        }
+      }
     };
 
     const handleSessionEnded = (data: { sessionId: string; reason?: string }) => {
@@ -88,6 +111,10 @@ export default function TerminalScreen() {
         activeSessionRef.current = '';
         setSessionId('');
         setConnectionState(pairingState?.isPaired ? 'paired' : 'not_paired');
+        // Clear persisted session ID
+        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.removeItem(ACTIVE_SESSION_KEY);
+        }
         terminalRef.current?.write(`\r\n--- Session ended: ${data.reason || 'Unknown'} ---\r\n`);
       }
     };
@@ -122,6 +149,7 @@ export default function TerminalScreen() {
 
     socketService.on('terminal_output', handleOutput);
     socketService.on('session_created', handleSessionCreated);
+    socketService.on('session_resumed', handleSessionResumed);
     socketService.on('session_ended', handleSessionEnded);
     socketService.on('runner_offline', handleRunnerOffline);
     
@@ -132,6 +160,7 @@ export default function TerminalScreen() {
     return () => {
       socketService.off('terminal_output', handleOutput);
       socketService.off('session_created', handleSessionCreated);
+      socketService.off('session_resumed', handleSessionResumed);
       socketService.off('session_ended', handleSessionEnded);
       socketService.off('runner_offline', handleRunnerOffline);
       
@@ -143,6 +172,7 @@ export default function TerminalScreen() {
       // appClient.disconnect();
     };
   }, []);
+
 
   const connectToBroker = async () => {
     // Check if already connected
@@ -196,6 +226,8 @@ export default function TerminalScreen() {
       
       if (status.isPaired && status.runnerOnline) {
         setConnectionState('paired');
+        // Try to resume a previous session (e.g. page refresh scenario)
+        tryResumeSession();
       } else if (status.isPaired && !status.runnerOnline) {
         setConnectionState('runner_offline');
       } else {
@@ -206,6 +238,21 @@ export default function TerminalScreen() {
       setError('Failed to connect to broker');
       setConnectionState('disconnected');
     }
+  };
+
+  /**
+   * After reconnecting to the broker, check if there's a persisted session and
+   * ask the broker to "resume" it (i.e., verify it's still alive on the runner side).
+   * The broker will respond with session_resumed event.
+   */
+  const tryResumeSession = () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.localStorage) return;
+    const savedSessionId = window.localStorage.getItem(ACTIVE_SESSION_KEY);
+    if (!savedSessionId) return;
+    console.log('🔁 Attempting to resume session:', savedSessionId);
+    activeSessionRef.current = savedSessionId;
+    setSessionId(savedSessionId);
+    socketService.resumeSession(savedSessionId);
   };
 
   const handleStartSession = useCallback(() => {

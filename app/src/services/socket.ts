@@ -32,7 +32,7 @@ class SocketService {
     this.socket = socket;
 
     // Set up event listeners
-    ['terminal_output', 'session_created', 'session_ended', 'runner_offline'].forEach(
+    ['terminal_output', 'session_created', 'session_resumed', 'session_ended', 'runner_offline'].forEach(
       (event) => {
         this.socket?.on(event, (data) => {
           this.emit(event, data);
@@ -49,6 +49,19 @@ class SocketService {
       return;
     }
     this.socket.emit('connect_runner', { runnerId, sessionId });
+  }
+
+  /**
+   * Ask the broker to verify that a previous session (identified by sessionId)
+   * is still alive. The broker will emit 'session_resumed' back with an `active`
+   * flag indicating whether the session can be resumed.
+   */
+  resumeSession(sessionId: string): void {
+    if (!this.socket) {
+      console.error('❌ SocketService: No socket configured');
+      return;
+    }
+    this.socket.emit('session_resume', { sessionId });
   }
 
   sendInput(sessionId: string, data: string): void {

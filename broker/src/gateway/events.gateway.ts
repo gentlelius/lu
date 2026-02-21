@@ -36,12 +36,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  // sessionId -> { appSocketId, runnerId }
-  private sessions = new Map<string, { appSocketId: string; runnerId: string }>();
+  // sessionId -> { appClientToken (stable), appSocketId (current socket), runnerId }
+  private sessions = new Map<string, { appClientToken: string; appSocketId: string; runnerId: string }>();
   // socketId -> runnerId (用于 Runner 断开时清理)
   private socketToRunner = new Map<string, string>();
-  // socketId -> userId (用于 App 断开时清理)
-  private socketToUser = new Map<string, string>();
+  // clientToken -> userId (用于 App 断开时清理)
+  private clientTokenToUser = new Map<string, string>();
 
   constructor(
     private readonly runnerService: RunnerService,
@@ -49,8 +49,26 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly pairingSessionService: PairingSessionService,
   ) {}
 
+  /** Extract the stable clientToken from socket handshake auth, fallback to socket.id */
+  private getClientToken(client: Socket): string {
+    return (client.handshake.auth?.clientToken as string) || client.id;
+  }
+
   handleConnection(client: Socket) {
-    console.log(`🔌 Client connected: ${client.id}`);
+    const clientToken = this.getClientToken(client);
+    console.log(`🔌 Client connected: ${client.id} (token: ${clientToken})`);
+
+    // Session takeover: if this clientToken has active sessions, update appSocketId to new socket
+    let takenOver = 0;
+    this.sessions.forEach((session, sessionId) => {
+      if (session.appClientToken === clientToken) {
+        session.appSocketId = client.id;
+        takenOver++;
+      }
+    });
+    if (takenOver > 0) {
+      console.log(`🔄 Session takeover: clientToken ${clientToken} reclaimed ${takenOver} session(s) on new socket ${client.id}`);
+    }
   }
 
   handleDisconnect(client: Socket) {
@@ -65,6 +83,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 通知所有连接到该 Runner 的 App
       this.sessions.forEach((session, sessionId) => {
         if (session.runnerId === runnerId) {
+          // Try to notify via current appSocketId
           const appSocket = this.server.sockets.sockets.get(session.appSocketId);
           appSocket?.emit('runner_offline', { runnerId });
           this.sessions.delete(sessionId);
@@ -72,8 +91,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
     }
 
-    // 清理 App 用户
-    this.socketToUser.delete(client.id);
+    // 清理 App 用户 (keyed by clientToken, not socket.id)
+    const clientToken = this.getClientToken(client);
+    // Only remove the user mapping if the current socket IS the active socket
+    // (i.e., not already superseded by a newer connection from same clientToken)
+    const activeSessionStillUsing = [...this.sessions.values()].some(
+      (s) => s.appClientToken === clientToken && s.appSocketId === client.id
+    );
+    if (!activeSessionStillUsing) {
+      this.clientTokenToUser.delete(clientToken);
+    }
   }
 
   // Runner 注册
@@ -108,7 +135,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.socketToUser.set(client.id, user.sub);
+    const clientToken = this.getClientToken(client);
+    this.clientTokenToUser.set(clientToken, user.sub);
     client.emit('app_authenticated', { 
       userId: user.sub,
       runners: this.runnerService.getOnlineRunnerIds(),
@@ -122,13 +150,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() payload: { runnerId: string; sessionId: string },
   ) {
     // SECURITY: Verify that the app is paired with the runner
-    // Use socket.id as appSessionId (same as PairingGateway)
-    const appSessionId = client.id;
+    // Use stable clientToken (same key used by PairingGateway)
+    const clientToken = this.getClientToken(client);
     
     // Check if the app is paired with this runner
-    const session = await this.pairingSessionService.getSession(appSessionId);
+    const session = await this.pairingSessionService.getSession(clientToken);
     if (!session || session.runnerId !== payload.runnerId) {
-      console.error(`❌ Security: App ${appSessionId} attempted to connect to unpaired runner ${payload.runnerId}`);
+      console.error(`❌ Security: App ${clientToken} attempted to connect to unpaired runner ${payload.runnerId}`);
       client.emit('error', { 
         message: 'Not paired with this runner. Please pair first using a pairing code.',
         code: 'NOT_PAIRED'
@@ -136,7 +164,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    console.log(`✅ Security: App ${appSessionId} is authorized to connect to runner ${payload.runnerId}`);
+    console.log(`✅ Security: App ${clientToken} is authorized to connect to runner ${payload.runnerId}`);
 
     // Check if runner is online
     const runner = this.runnerService.getRunner(payload.runnerId);
@@ -146,6 +174,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     this.sessions.set(payload.sessionId, {
+      appClientToken: clientToken,
       appSocketId: client.id,
       runnerId: payload.runnerId,
     });
@@ -225,4 +254,27 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     appSocket?.emit('session_ended', payload);
     this.sessions.delete(payload.sessionId);
   }
+
+  // App: 刷新页面后请求恢复之前的 session
+  @SubscribeMessage('session_resume')
+  handleSessionResume(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { sessionId: string },
+  ) {
+    const clientToken = this.getClientToken(client);
+    const session = this.sessions.get(payload.sessionId);
+
+    // Verify the session exists and belongs to this client
+    if (session && session.appClientToken === clientToken) {
+      // Update to the new socket (session takeover already done in handleConnection,
+      // but explicitly confirm here just in case)
+      session.appSocketId = client.id;
+      console.log(`✅ Broker: Session ${payload.sessionId} resumed for clientToken ${clientToken} on socket ${client.id}`);
+      client.emit('session_resumed', { sessionId: payload.sessionId, active: true });
+    } else {
+      console.log(`⚠️ Broker: Session ${payload.sessionId} not found or belongs to different client (token: ${clientToken})`);
+      client.emit('session_resumed', { sessionId: payload.sessionId, active: false });
+    }
+  }
 }
+

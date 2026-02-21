@@ -1,4 +1,31 @@
 import { io, Socket } from 'socket.io-client';
+import { Platform } from 'react-native';
+
+/**
+ * Get or create a stable client token that persists across page refreshes.
+ * Stored in localStorage on web, falls back to a session-level UUID on native.
+ */
+function getOrCreateClientToken(): string {
+  const STORAGE_KEY = 'lu_client_token';
+  
+  // On web, use localStorage for persistence across refreshes
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+    let token = window.localStorage.getItem(STORAGE_KEY);
+    if (!token) {
+      token = 'ct-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      window.localStorage.setItem(STORAGE_KEY, token);
+    }
+    return token;
+  }
+  
+  // On native, generate once per process (module-level singleton is fine)
+  if (!_nativeClientToken) {
+    _nativeClientToken = 'ct-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+  return _nativeClientToken;
+}
+
+let _nativeClientToken: string | null = null;
 
 /**
  * Error codes for app pairing operations
@@ -130,6 +157,9 @@ export class AppClient {
   async connect(config: AppConfig): Promise<void> {
     this.config = config;
 
+    // Retrieve (or create) a stable client token for this device/browser session
+    const clientToken = getOrCreateClientToken();
+    console.log(`🔑 Using clientToken: ${clientToken}`);
     console.log(`🔌 Connecting to broker: ${config.brokerUrl}`);
 
     return new Promise((resolve, reject) => {
@@ -142,6 +172,7 @@ export class AppClient {
         transports: ['websocket'], // Force WebSocket for React Native
         auth: {
           token: config.jwtToken,
+          clientToken, // 🔑 Stable token so Broker can identify this client across reconnects
         },
       });
 
